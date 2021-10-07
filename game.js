@@ -1,6 +1,9 @@
 // MinesweeperSnake Core Game Logic
 
-const CELLSIZE = 15;
+const CELLSIZE = 35;
+const COLORS = {
+  CLEARED: [ "#7bb7ff", "#56a3ff" ]
+}
 
 const cnv = document.querySelector( ".main canvas" );
 const ctx = cnv.getContext( "2d" );
@@ -37,13 +40,16 @@ let snakeDir = DIRECTION.RIGHT;
 
 let snake;
 
+initGame( );
+requestAnimationFrame( draw );
+
 window.onresize = setCanvasSize;
 function setCanvasSize( ) {
   width  = cnv.width  = window.innerWidth;
   height = cnv.height = window.innerHeight;
 }
 
-function initGame {
+function initGame( ) {
   snakeX = 0;
   snakeY = 0;
   
@@ -57,5 +63,21 @@ function initGame {
 
 // Core Loop
 function draw( ) {
+  drawGrid( );
   requestAnimationFrame( draw );
+}
+
+function drawGrid( ) {
+  const xLower = Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ),
+        xUpper = Math.ceil(  cameraX + ( width  / 2 ) / CELLSIZE ),
+        yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
+        yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
+  for ( let x = xLower; x < xUpper; x++ ) {
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    for ( let y = yLower; y < yUpper; y++ ) {
+      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      ctx.fillStyle = COLORS.CLEARED[ ( x + y ) & 1 ];
+      ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
+    }
+  }
 }

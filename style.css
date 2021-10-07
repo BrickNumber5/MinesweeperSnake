@@ -2,8 +2,13 @@ body, body * {
   all: unset;
 }
 
+:root {
+  --clr-cleared-1: #7bb7ff;
+  --clr-cleared-2: #56a3ff;
+}
+
 body {
-  background: #666;
+  background: var(--clr-cleared-1);
 }
 
 .main {
