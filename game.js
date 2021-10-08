@@ -1,8 +1,11 @@
 // MinesweeperSnake Core Game Logic
 
+const TURNTIME = 350;
+
 const CELLSIZE = 35;
 const COLORS = {
-  CLEARED: [ "#7bb7ff", "#56a3ff" ]
+  CLEARED: [ "#7bb7ff", "#56a3ff" ],
+  SNAKE: "#840ebf"
 }
 
 const cnv = document.querySelector( ".main canvas" );
@@ -26,17 +29,18 @@ const DIRECTION = {
 function dirToVector( dir ) {
   switch ( dir ) {
     case DIRECTION.UP:
-      return [  0, -1 ];
+      return { x:  0, y: -1 };
     case DIRECTION.RIGHT:
-      return [  1,  0 ];
+      return { x:  1, y:  0 };
     case DIRECTION.DOWN:
-      return [  0,  1 ];
+      return { x:  0, y:  1 };
     case DIRECTION.LEFT:
-      return [ -1,  0 ];
+      return { x: -1, y:  0 };
   }
 }
 
 let snakeDir = DIRECTION.RIGHT;
+let directionsQueue;
 
 let snake;
 
@@ -50,20 +54,61 @@ function setCanvasSize( ) {
 }
 
 function initGame( ) {
-  snakeX = 0;
-  snakeY = 0;
+  // snakeX = 0;
+  // snakeY = 0;
+  snakeX = -4;
+  snakeY = -3;
   
-  snakeDir = DIRECTION.RIGHT;
+  // snakeDir = DIRECTION.RIGHT;
+  snakeDir = DIRECTION.UP;
+  directionsQueue = [ ];
   
-  snake = [ [ -2, 0 ], [ -1, 0 ], [ 0, 0 ] ];
+  // snake = [ { x: -3, y: 0 }, { x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 } ];
+  snake = [
+    { x: -3, y: 0 },
+    { x: -2, y: 0 },
+    { x: -1, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: -1 },
+    { x: 0, y: -1 },
+    { x: -1, y: -1 },
+    { x: -2, y: -1 },
+    { x: -3, y: -1 },
+    { x: -3, y: 0 },
+    { x: -3, y: 1 },
+    { x: -3, y: 2 },
+    { x: -3, y: 3 },
+    { x: -4, y: 3 },
+    { x: -4, y: 2 },
+    { x: -4, y: 1 },
+    { x: -4, y: 0 },
+    { x: -4, y: -1 },
+    { x: -4, y: -2 },
+    { x: -4, y: -3 },
+  ];
   
   cameraX = 0;
   cameraY = 0;
 }
 
 // Core Loop
-function draw( ) {
+let prevTime = -1, elapsedTime, timeSinceLastTurn = 0;
+function draw( time ) {
+  if ( prevTime === -1 ) {
+    prevTime = time;
+    requestAnimationFrame( draw );
+    return;
+  }
+  elapsedTime = time - prevTime;
+  prevTime = time;
+  updateCamera( );
   drawGrid( );
+  drawSnake( );
+  timeSinceLastTurn += elapsedTime;
+  if ( timeSinceLastTurn >= TURNTIME ) {
+    timeSinceLastTurn -= TURNTIME;
+    turnLogic( );
+  }
   requestAnimationFrame( draw );
 }
 
@@ -81,3 +126,66 @@ function drawGrid( ) {
     }
   }
 }
+
+function drawSnake( ) {
+  ctx.strokeStyle = COLORS.SNAKE;
+  ctx.lineWidth = CELLSIZE * 0.8;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath( );
+  ctx.moveTo( CELLSIZE * ( snake[ 1 ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ 1 ].y - cameraY + 0.5 ) + height / 2 );
+  for ( let i = 1; i < snake.length; i++ ) {
+    ctx.lineTo( CELLSIZE * ( snake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ i ].y - cameraY + 0.5 ) + height / 2 );
+  }
+  ctx.stroke( );
+}
+
+function updateCamera( ) {
+  let turnAnimation = timeSinceLastTurn / TURNTIME;
+  cameraX = lerp( snake.at( -2 ).x, snakeX, turnAnimation ) + 0.5;
+  cameraY = lerp( snake.at( -2 ).y, snakeY, turnAnimation ) + 0.5;
+}
+
+function turnLogic( ) {
+  moveSnake( );
+}
+
+function moveSnake( ) {
+  if ( directionsQueue.length > 0 ) snakeDir = directionsQueue.pop( );
+  let vector = dirToVector( snakeDir );
+  snakeX += vector.x;
+  snakeY += vector.y;
+  snake.push( { x: snakeX, y: snakeY } );
+  snake.shift( );
+}
+
+window.addEventListener( "keydown", e => {
+  let dir = null;
+  switch( e.key ) {
+    case "w":
+    case "ArrowUp":
+      dir = DIRECTION.UP;
+      break;
+    case "d":
+    case "ArrowRight":
+      dir = DIRECTION.RIGHT;
+      break;
+    case "s":
+    case "ArrowDown":
+      dir = DIRECTION.DOWN;
+      break;
+    case "a":
+    case "ArrowLeft":
+      dir = DIRECTION.LEFT;
+      break;
+  }
+  if ( dir !== null && directionsQueue.length < 5 ) {
+    let dq0 = directionsQueue[ 0 ] ?? snakeDir;
+    if (
+         ( ( dir === DIRECTION.UP   || dir === DIRECTION.DOWN  ) && ( dq0 === DIRECTION.LEFT || dq0 === DIRECTION.RIGHT ) )
+      || ( ( dir === DIRECTION.LEFT || dir === DIRECTION.RIGHT ) && ( dq0 === DIRECTION.UP   || dq0 === DIRECTION.DOWN  ) )
+    ) directionsQueue.unshift( dir );
+  }
+} );
+
+const lerp = ( a, b, t ) => ( 1 - t ) * a + t * b;
