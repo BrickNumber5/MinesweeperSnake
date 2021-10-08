@@ -1,11 +1,15 @@
 // MinesweeperSnake Core Game Logic
 
+let DEBUGMODE = false;
+
 const TURNTIME = 200;
 
 const CELLSIZE = 35;
 const COLORS = {
   CLEARED: [ "#7bb7ff", "#56a3ff" ],
-  SNAKE: "#840ebf"
+  COVERED: [ "#475568", "#2b394c" ],
+  SNAKE: "#840ebf",
+  DEBUG: "#cc2222"
 }
 
 const cnv = document.querySelector( ".main canvas" );
@@ -46,6 +50,30 @@ let snake;
 
 let usedCourtesyTurn = false;
 
+const REGIONSIZE = 16;
+
+let regions;
+
+class Region {
+  constructor( rx, ry, clear = false ) {
+    this.rx = rx;
+    this.ry = ry;
+    this.wx = rx * REGIONSIZE;
+    this.wy = ry * REGIONSIZE;
+    this.populate( clear );
+  }
+  get( x, y ) {
+    return this.cells[ x + y * REGIONSIZE ];
+  }
+  populate( clear ) {
+    if ( clear ) {
+      this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( ) => ( { mine: false, covered: false } ) );
+    } else {
+      this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( _, i ) => ( { mine: !Math.round( Math.random( ) ), covered: true } ) );
+    }
+  }
+}
+
 initGame( );
 requestAnimationFrame( draw );
 
@@ -69,6 +97,9 @@ function initGame( ) {
   cameraY = 0;
   
   usedCourtesyTurn = false;
+  
+  regions = new Map( );
+  regions.set( "0/0", new Region( 0, 0, true ) );
 }
 
 // Core Loop
@@ -79,16 +110,24 @@ function draw( time ) {
     requestAnimationFrame( draw );
     return;
   }
+  
   elapsedTime = time - prevTime;
   prevTime = time;
+  
+  generateWorldAsNeeded( );
+  
   updateCamera( );
   drawGrid( );
+  if ( DEBUGMODE ) drawDebugRegions( );
+  if ( DEBUGMODE ) drawDebugMines( );
   drawSnake( );
+  
   timeSinceLastTurn += elapsedTime;
   if ( timeSinceLastTurn >= TURNTIME ) {
     timeSinceLastTurn -= TURNTIME;
     turnLogic( );
   }
+  
   requestAnimationFrame( draw );
 }
 
@@ -101,7 +140,8 @@ function drawGrid( ) {
     let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
     for ( let y = yLower; y < yUpper; y++ ) {
       let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
-      ctx.fillStyle = COLORS.CLEARED[ ( x + y ) & 1 ];
+      let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
+      ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
     }
   }
@@ -153,6 +193,46 @@ function updateCamera( ) {
   }
 }
 
+function drawDebugRegions( ) {
+  ctx.strokeStyle = COLORS.DEBUG;
+  ctx.lineWidth = CELLSIZE * 0.2;
+  ctx.lineJoin = "miter";
+  const xLower = Math.floor( ( cameraX - ( width  / 2 ) / CELLSIZE ) / REGIONSIZE ),
+        xUpper = Math.ceil(  ( cameraX + ( width  / 2 ) / CELLSIZE ) / REGIONSIZE ),
+        yLower = Math.floor( ( cameraY - ( height / 2 ) / CELLSIZE ) / REGIONSIZE ),
+        yUpper = Math.ceil(  ( cameraY + ( height / 2 ) / CELLSIZE ) / REGIONSIZE );
+  for ( let x = xLower; x < xUpper; x++ ) {
+    let xCell = CELLSIZE * ( x * REGIONSIZE - cameraX ) + width / 2;
+    for ( let y = yLower; y < yUpper; y++ ) {
+      let yCell = CELLSIZE * ( y * REGIONSIZE - cameraY ) + height / 2;
+      ctx.strokeRect( xCell, yCell, CELLSIZE * REGIONSIZE, CELLSIZE * REGIONSIZE );
+    }
+  }
+}
+
+function drawDebugMines( ) {
+  ctx.strokeStyle = COLORS.DEBUG;
+  ctx.lineWidth = CELLSIZE * 0.6;
+  ctx.lineCap = "round";
+  const xLower = Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ),
+        xUpper = Math.ceil(  cameraX + ( width  / 2 ) / CELLSIZE ),
+        yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
+        yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
+  for ( let x = xLower; x < xUpper; x++ ) {
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    for ( let y = yLower; y < yUpper; y++ ) {
+      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
+      if ( cell.mine ) {
+        ctx.beginPath( );
+        ctx.moveTo( xCell + 0.5 * CELLSIZE, yCell + 0.5 * CELLSIZE );
+        ctx.lineTo( xCell + 0.5 * CELLSIZE, yCell + 0.5 * CELLSIZE );
+        ctx.stroke( );
+      }
+    }
+  }
+}
+
 function turnLogic( ) {
   moveSnake( );
 }
@@ -190,6 +270,8 @@ function checkCollision( ) {
   return collided;
 }
 
+let debugmodecounter = 0;
+
 window.addEventListener( "keydown", e => {
   let dir = null;
   switch( e.key ) {
@@ -209,6 +291,13 @@ window.addEventListener( "keydown", e => {
     case "ArrowLeft":
       dir = DIRECTION.LEFT;
       break;
+    case "D":
+      debugmodecounter++;
+      if ( debugmodecounter >= 5 ) {
+        DEBUGMODE = !DEBUGMODE;
+        debugmodecounter = 0;
+      }
+      break;
   }
   if ( dir !== null && directionsQueue.length < 5 ) {
     let dq0 = directionsQueue[ 0 ] ?? snakeDir;
@@ -219,7 +308,23 @@ window.addEventListener( "keydown", e => {
   }
 } );
 
+function generateWorldAsNeeded( ) {
+  const xLower = Math.floor( ( cameraX - ( width  / 2 ) / CELLSIZE ) / REGIONSIZE ) - 1,
+        xUpper = Math.ceil(  ( cameraX + ( width  / 2 ) / CELLSIZE ) / REGIONSIZE ) + 1,
+        yLower = Math.floor( ( cameraY - ( height / 2 ) / CELLSIZE ) / REGIONSIZE ) - 1,
+        yUpper = Math.ceil(  ( cameraY + ( height / 2 ) / CELLSIZE ) / REGIONSIZE ) + 1;
+  for ( let x = xLower; x < xUpper; x++ ) {
+    for ( let y = yLower; y < yUpper; y++ ) {
+      let cStr = x + "/" + y;
+      if ( !regions.has( cStr ) ) {
+        regions.set( cStr, new Region( x, y ) );
+      }
+    }
+  }
+}
+
 const lerp = ( a, b, t ) => ( 1 - t ) * a + t * b;
+const mod  = ( a, n ) => ( ( a % n ) + n ) % n;
 
 function reset( reason ) {
   initGame( );
