@@ -56,38 +56,14 @@ function setCanvasSize( ) {
 }
 
 function initGame( ) {
-  // snakeX = 0;
-  // snakeY = 0;
-  snakeX = -4;
-  snakeY = -3;
+  snakeX = 0;
+  snakeY = 0;
   
-  // snakeDir = DIRECTION.RIGHT;
-  snakeDir = DIRECTION.UP;
+  snakeDir = DIRECTION.RIGHT;
   directionsQueue = [ ];
   
   // snake = [ { x: -3, y: 0 }, { x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 } ];
-  snake = [
-    { x: -3, y: 0 },
-    { x: -2, y: 0 },
-    { x: -1, y: 0 },
-    { x: 1, y: 0 },
-    { x: 1, y: -1 },
-    { x: 0, y: -1 },
-    { x: -1, y: -1 },
-    { x: -2, y: -1 },
-    { x: -3, y: -1 },
-    { x: -3, y: 0 },
-    { x: -3, y: 1 },
-    { x: -3, y: 2 },
-    { x: -3, y: 3 },
-    { x: -4, y: 3 },
-    { x: -4, y: 2 },
-    { x: -4, y: 1 },
-    { x: -4, y: 0 },
-    { x: -4, y: -1 },
-    { x: -4, y: -2 },
-    { x: -4, y: -3 },
-  ];
+  snake = Array.from( { length: 100 }, ( _, i ) => ( { x: i - 99, y: 0 } ) );
   
   cameraX = 0;
   cameraY = 0;
