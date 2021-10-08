@@ -44,6 +44,8 @@ let directionsQueue;
 
 let snake;
 
+let usedCourtesyTurn = false;
+
 initGame( );
 requestAnimationFrame( draw );
 
@@ -89,12 +91,14 @@ function initGame( ) {
   
   cameraX = 0;
   cameraY = 0;
+  
+  usedCourtesyTurn = false;
 }
 
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0;
 function draw( time ) {
-  if ( prevTime === -1 ) {
+  if ( prevTime === -1 || time - prevTime > 5000 ) {
     prevTime = time;
     requestAnimationFrame( draw );
     return;
@@ -129,29 +133,48 @@ function drawGrid( ) {
 
 function drawSnake( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
+  let tailFrozen = usedCourtesyTurn,
+      headFrozen = usedCourtesyTurn;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.beginPath( );
-  ctx.moveTo(
-    CELLSIZE * ( lerp( snake[ 0 ].x, snake[ 1 ].x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
-    CELLSIZE * ( lerp( snake[ 0 ].y, snake[ 1 ].y, turnAnimation ) - cameraY + 0.5 ) + height / 2
-  );
+  if ( tailFrozen ) {
+    ctx.moveTo(
+      CELLSIZE * ( snake[ 1 ].x - cameraX + 0.5 ) + width / 2,
+      CELLSIZE * ( snake[ 1 ].y - cameraY + 0.5 ) + height / 2
+    );
+  } else {
+    ctx.moveTo(
+      CELLSIZE * ( lerp( snake[ 0 ].x, snake[ 1 ].x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
+      CELLSIZE * ( lerp( snake[ 0 ].y, snake[ 1 ].y, turnAnimation ) - cameraY + 0.5 ) + height / 2
+    );
+  }
   for ( let i = 1; i < snake.length - 1; i++ ) {
     ctx.lineTo( CELLSIZE * ( snake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ i ].y - cameraY + 0.5 ) + height / 2 );
   }
-  ctx.lineTo(
-    CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
-    CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
-  );
+  if ( headFrozen ) {
+    ctx.lineTo(
+      CELLSIZE * ( snake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
+      CELLSIZE * ( snake.at( -1 ).y - cameraY + 0.5 ) + height / 2
+    );
+  } else {
+    ctx.lineTo(
+      CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
+      CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
+    );
+  }
   ctx.stroke( );
 }
 
 function updateCamera( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  cameraX = lerp( snake.at( -2 ).x, snakeX, turnAnimation ) + 0.5;
-  cameraY = lerp( snake.at( -2 ).y, snakeY, turnAnimation ) + 0.5;
+  let headFrozen = usedCourtesyTurn;
+  if ( !headFrozen ) {
+    cameraX = lerp( snake.at( -2 ).x, snakeX, turnAnimation ) + 0.5;
+    cameraY = lerp( snake.at( -2 ).y, snakeY, turnAnimation ) + 0.5;
+  }
 }
 
 function turnLogic( ) {
@@ -160,11 +183,35 @@ function turnLogic( ) {
 
 function moveSnake( ) {
   if ( directionsQueue.length > 0 ) snakeDir = directionsQueue.pop( );
+  if ( checkCollision( ) ) {
+    if ( usedCourtesyTurn ) {
+      reset( "self-collision" );
+    } else {
+      usedCourtesyTurn = true;
+      return;
+    }
+  } else {
+    usedCourtesyTurn = false;
+  }
   let vector = dirToVector( snakeDir );
   snakeX += vector.x;
   snakeY += vector.y;
   snake.push( { x: snakeX, y: snakeY } );
   snake.shift( );
+}
+
+function checkCollision( ) {
+  let vector = dirToVector( snakeDir );
+  let tx = snakeX + vector.x,
+      ty = snakeY + vector.y;
+  let collided = false;
+  for ( let i = 1; i < snake.length; i++ ) {
+    if ( snake[ i ].x === tx && snake[ i ].y === ty ) {
+      collided = true;
+      break;
+    }
+  }
+  return collided;
 }
 
 window.addEventListener( "keydown", e => {
@@ -197,3 +244,7 @@ window.addEventListener( "keydown", e => {
 } );
 
 const lerp = ( a, b, t ) => ( 1 - t ) * a + t * b;
+
+function reset( reason ) {
+  initGame( );
+}
