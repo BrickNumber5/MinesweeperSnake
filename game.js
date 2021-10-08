@@ -1,6 +1,6 @@
 // MinesweeperSnake Core Game Logic
 
-const TURNTIME = 350;
+const TURNTIME = 200;
 
 const CELLSIZE = 35;
 const COLORS = {
@@ -128,15 +128,23 @@ function drawGrid( ) {
 }
 
 function drawSnake( ) {
+  let turnAnimation = timeSinceLastTurn / TURNTIME;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.beginPath( );
-  ctx.moveTo( CELLSIZE * ( snake[ 1 ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ 1 ].y - cameraY + 0.5 ) + height / 2 );
-  for ( let i = 1; i < snake.length; i++ ) {
+  ctx.moveTo(
+    CELLSIZE * ( lerp( snake[ 0 ].x, snake[ 1 ].x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
+    CELLSIZE * ( lerp( snake[ 0 ].y, snake[ 1 ].y, turnAnimation ) - cameraY + 0.5 ) + height / 2
+  );
+  for ( let i = 1; i < snake.length - 1; i++ ) {
     ctx.lineTo( CELLSIZE * ( snake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ i ].y - cameraY + 0.5 ) + height / 2 );
   }
+  ctx.lineTo(
+    CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
+    CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
+  );
   ctx.stroke( );
 }
 
