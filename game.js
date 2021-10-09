@@ -169,9 +169,7 @@ function updateCells( ) {
         yLower = Math.floor( cameraY - height / CELLSIZE ),
         yUpper = Math.ceil(  cameraY + height / CELLSIZE ); 
   for ( let x = xLower - 1; x < xUpper + 1; x++ ) {
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
     for ( let y = yLower - 1; y < yUpper + 1; y++ ) {
-      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
       if ( cell.number !== null ) continue;
       if ( cell.mine ) {
@@ -179,19 +177,20 @@ function updateCells( ) {
         continue;
       }
       let num = 0;
-      [ [ -1, -1 ], [ 0, -1 ], [ 1, -1 ], [ -1, 0 ], [ 1, 0 ], [ 1, -1 ], [ 1, 0 ], [ 1, 1 ] ].forEach( offset => {
-        let nx = x + offset[ 0 ], ny = y + offset[ 1 ];
-        let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
-        let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE )  );
-        if ( neighborCell.mine ) num++;
-      } );
+      for ( let i = -1; i <= 1; i++ ) {
+        for ( let j = -1; j <= 1; j++ ) {
+          if ( i === 0 && j === 0 ) continue;
+          let nx = x + i, ny = y + j;
+          let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
+          let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE )  );
+          if ( neighborCell.mine ) num++;
+        }
+      }
       cell.number = num;
     }
   }
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
       if ( !cell.covered || cell.mine ) continue;
       for ( let i = -1; i <= 1; i++ ) {
