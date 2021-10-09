@@ -377,10 +377,10 @@ window.addEventListener( "keydown", e => {
 } );
 
 function generateWorldAsNeeded( ) {
-  const xLower = Math.floor( ( cameraX - ( width  / 2 ) / CELLSIZE ) / REGIONSIZE ) - 1,
-        xUpper = Math.ceil(  ( cameraX + ( width  / 2 ) / CELLSIZE ) / REGIONSIZE ) + 1,
-        yLower = Math.floor( ( cameraY - ( height / 2 ) / CELLSIZE ) / REGIONSIZE ) - 1,
-        yUpper = Math.ceil(  ( cameraY + ( height / 2 ) / CELLSIZE ) / REGIONSIZE ) + 1;
+  const xLower = Math.floor( ( cameraX - width / CELLSIZE ) / REGIONSIZE ) - 1,
+        xUpper = Math.ceil(  ( cameraX + width / CELLSIZE ) / REGIONSIZE ) + 1,
+        yLower = Math.floor( ( cameraY - height / CELLSIZE ) / REGIONSIZE ) - 1,
+        yUpper = Math.ceil(  ( cameraY + height / CELLSIZE ) / REGIONSIZE ) + 1;
   for ( let x = xLower; x < xUpper; x++ ) {
     for ( let y = yLower; y < yUpper; y++ ) {
       let cStr = x + "/" + y;
