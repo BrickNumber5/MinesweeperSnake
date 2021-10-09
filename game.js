@@ -2,6 +2,11 @@
 
 let DEBUGMODE = false;
 
+const lerp = ( a, b, t ) => ( 1 - t ) * a + t * b;
+const mod  = ( a, n ) => ( ( a % n ) + n ) % n;
+const sqrdist = ( x1, y1, x2, y2 ) => ( x2 - x1 ) ** 2 + ( y2 - y1 ) ** 2;
+const dist = ( x1, y1, x2, y2 ) => Math.sqrt( sqrdist( x1, y1, x2, y2 ) );
+
 const TURNTIME = 200;
 
 const CELLSIZE = 35;
@@ -55,21 +60,37 @@ const REGIONSIZE = 16;
 let regions;
 
 class Region {
-  constructor( rx, ry, clear = false ) {
+  constructor( rx, ry, center = false ) {
     this.rx = rx;
     this.ry = ry;
     this.wx = rx * REGIONSIZE;
     this.wy = ry * REGIONSIZE;
-    this.populate( clear );
+    this.populate( center );
   }
   get( x, y ) {
     return this.cells[ x + y * REGIONSIZE ];
   }
-  populate( clear ) {
-    if ( clear ) {
-      this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( ) => ( { mine: false, covered: false } ) );
+  populate( center ) {
+    const likelyhood = ( x, y ) => 1 / ( 3 * ( ( 1 + ( Math.E ** -( dist( x, y, 7.5, 7.5 ) / ( 4 * REGIONSIZE ) ) ) ) ** 3 ) );
+    let that = this;
+    if ( center ) {
+      this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( _, i ) => {
+        let x = i % REGIONSIZE,
+            y = Math.floor( i / REGIONSIZE );
+        if ( x >= REGIONSIZE / 4 && x < REGIONSIZE - REGIONSIZE / 4 && y >= REGIONSIZE / 4 && y < REGIONSIZE - REGIONSIZE / 4 ) {
+          return { mine: false, covered: false };
+        } else {
+          return {
+            mine: Math.random( ) <= likelyhood( that.wx + ( i % REGIONSIZE ), that.wy + Math.floor( i / REGIONSIZE ) ),
+            covered: true
+          };
+        }
+      } );
     } else {
-      this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( _, i ) => ( { mine: !Math.round( Math.random( ) ), covered: true } ) );
+      this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( _, i ) => ( {
+        mine: Math.random( ) <= likelyhood( that.wx + ( i % REGIONSIZE ), that.wy + Math.floor( i / REGIONSIZE ) ),
+        covered: true
+      } ) );
     }
   }
 }
@@ -322,9 +343,6 @@ function generateWorldAsNeeded( ) {
     }
   }
 }
-
-const lerp = ( a, b, t ) => ( 1 - t ) * a + t * b;
-const mod  = ( a, n ) => ( ( a % n ) + n ) % n;
 
 function reset( reason ) {
   initGame( );
