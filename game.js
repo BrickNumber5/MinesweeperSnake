@@ -97,13 +97,21 @@ class Region {
   }
 }
 
-initGame( );
-requestAnimationFrame( draw );
+( async ( ) => {
+  let ff = await new FontFace( "Roboto Bold Modified", "url(robotomodified/Roboto-Bold-Modified.ttf)" ).load( );
+  document.fonts.add( ff );
+  ctx.font = `${ 0.8 * CELLSIZE }px "Roboto Bold Modified"`;
+  ctx.textAlign = "center";
+  initGame( );
+  requestAnimationFrame( draw );
+} )( );
 
 window.onresize = setCanvasSize;
 function setCanvasSize( ) {
   width  = cnv.width  = window.innerWidth;
   height = cnv.height = window.innerHeight;
+  ctx.font = `${ 0.8 * CELLSIZE }px "Roboto Bold Modified"`;
+  ctx.textAlign = "center";
 }
 
 function initGame( ) {
@@ -211,6 +219,10 @@ function drawGrid( ) {
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
       ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
+      if ( !cell.covered && cell.number > 0 ) {
+        ctx.fillStyle = "white";
+        ctx.fillText( cell.number.toString( ), xCell + CELLSIZE / 2, yCell + CELLSIZE * 0.75 );
+      }
     }
   }
 }
