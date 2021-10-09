@@ -279,9 +279,7 @@ function drawDebugRegions( ) {
 }
 
 function drawDebugMines( ) {
-  ctx.strokeStyle = COLORS.DEBUG;
-  ctx.lineWidth = CELLSIZE * 0.6;
-  ctx.lineCap = "round";
+  ctx.fillStyle = COLORS.DEBUG;
   const xLower = Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ),
         xUpper = Math.ceil(  cameraX + ( width  / 2 ) / CELLSIZE ),
         yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
@@ -292,10 +290,7 @@ function drawDebugMines( ) {
       let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
       if ( cell.mine ) {
-        ctx.beginPath( );
-        ctx.moveTo( xCell + 0.5 * CELLSIZE, yCell + 0.5 * CELLSIZE );
-        ctx.lineTo( xCell + 0.5 * CELLSIZE, yCell + 0.5 * CELLSIZE );
-        ctx.stroke( );
+        ctx.fillRect( xCell + 0.2 * CELLSIZE, yCell + 0.2 * CELLSIZE, 0.6 * CELLSIZE, 0.6 * CELLSIZE );
       }
     }
   }
