@@ -126,7 +126,7 @@ function initGame( ) {
 }
 
 // Core Loop
-let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, updateCellsTimer = 0;
+let prevTime = -1, elapsedTime, timeSinceLastTurn = 0;
 function draw( time ) {
   if ( prevTime === -1 || time - prevTime > 5000 ) {
     prevTime = time;
@@ -138,11 +138,7 @@ function draw( time ) {
   prevTime = time;
   
   generateWorldAsNeeded( );
-  updateCellsTimer++;
-  if ( updateCellsTimer >= 5 ) {
-    updateCellsTimer = 0;
-    updateCells( );
-  }
+  updateCells( );
   
   updateCamera( );
   drawGrid( );
