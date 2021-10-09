@@ -78,18 +78,20 @@ class Region {
         let x = i % REGIONSIZE,
             y = Math.floor( i / REGIONSIZE );
         if ( x >= REGIONSIZE / 4 && x < REGIONSIZE - REGIONSIZE / 4 && y >= REGIONSIZE / 4 && y < REGIONSIZE - REGIONSIZE / 4 ) {
-          return { mine: false, covered: false };
+          return { mine: false, covered: false, number: null };
         } else {
           return {
             mine: Math.random( ) <= likelyhood( that.wx + ( i % REGIONSIZE ), that.wy + Math.floor( i / REGIONSIZE ) ),
-            covered: true
+            covered: true,
+            number: null
           };
         }
       } );
     } else {
       this.cells = Array.from( { length: REGIONSIZE * REGIONSIZE }, ( _, i ) => ( {
         mine: Math.random( ) <= likelyhood( that.wx + ( i % REGIONSIZE ), that.wy + Math.floor( i / REGIONSIZE ) ),
-        covered: true
+        covered: true,
+        number: null
       } ) );
     }
   }
@@ -124,7 +126,7 @@ function initGame( ) {
 }
 
 // Core Loop
-let prevTime = -1, elapsedTime, timeSinceLastTurn = 0;
+let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, updateCellsTimer = 0;
 function draw( time ) {
   if ( prevTime === -1 || time - prevTime > 5000 ) {
     prevTime = time;
@@ -136,6 +138,11 @@ function draw( time ) {
   prevTime = time;
   
   generateWorldAsNeeded( );
+  updateCellsTimer++;
+  if ( updateCellsTimer >= 5 ) {
+    updateCellsTimer = 0;
+    updateCells( );
+  }
   
   updateCamera( );
   drawGrid( );
@@ -150,6 +157,50 @@ function draw( time ) {
   }
   
   requestAnimationFrame( draw );
+}
+
+function updateCells( ) {
+  const xLower = Math.floor( cameraX - width / CELLSIZE ),
+        xUpper = Math.ceil(  cameraX + width / CELLSIZE ),
+        yLower = Math.floor( cameraY - height / CELLSIZE ),
+        yUpper = Math.ceil(  cameraY + height / CELLSIZE ); 
+  for ( let x = xLower - 1; x < xUpper + 1; x++ ) {
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    for ( let y = yLower - 1; y < yUpper + 1; y++ ) {
+      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
+      if ( cell.number !== null ) continue;
+      if ( cell.mine ) {
+        cell.number = -1;
+        continue;
+      }
+      let num = 0;
+      [ [ -1, -1 ], [ 0, -1 ], [ 1, -1 ], [ -1, 0 ], [ 1, 0 ], [ 1, -1 ], [ 1, 0 ], [ 1, 1 ] ].forEach( offset => {
+        let nx = x + offset[ 0 ], ny = y + offset[ 1 ];
+        let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
+        let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE )  );
+        if ( neighborCell.mine ) num++;
+      } );
+      cell.number = num;
+    }
+  }
+  for ( let x = xLower; x < xUpper; x++ ) {
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    for ( let y = yLower; y < yUpper; y++ ) {
+      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
+      if ( !cell.covered || cell.mine ) continue;
+      for ( let i = -1; i <= 1; i++ ) {
+        for ( let j = -1; j <= 1; j++ ) {
+          if ( i === 0 && j === 0 ) continue;
+          let nx = x + i, ny = y + j;
+          let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
+          let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE ) );
+          if ( !neighborCell.covered && neighborCell.number === 0 ) cell.covered = false;
+        }
+      }
+    }
+  }
 }
 
 function drawGrid( ) {
