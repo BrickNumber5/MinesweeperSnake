@@ -55,6 +55,7 @@ let directionsQueue;
 let snake;
 
 let usedCourtesyTurn = false;
+let clearedTile = false;
 
 const REGIONSIZE = 16;
 
@@ -128,6 +129,7 @@ function initGame( ) {
   cameraY = 0;
   
   usedCourtesyTurn = false;
+  clearedTile = false;
   
   regions = new Map( );
   regions.set( "0/0", new Region( 0, 0, true ) );
@@ -227,8 +229,8 @@ function drawGrid( ) {
 
 function drawSnake( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let tailFrozen = usedCourtesyTurn,
-      headFrozen = usedCourtesyTurn;
+  let tailFrozen = usedCourtesyTurn || clearedTile,
+      headFrozen = usedCourtesyTurn || clearedTile;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
   ctx.lineCap = "round";
@@ -264,7 +266,7 @@ function drawSnake( ) {
 
 function updateCamera( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let headFrozen = usedCourtesyTurn;
+  let headFrozen = usedCourtesyTurn || clearedTile;
   if ( !headFrozen ) {
     cameraX = lerp( snake.at( -2 ).x, snakeX, turnAnimation ) + 0.5;
     cameraY = lerp( snake.at( -2 ).y, snakeY, turnAnimation ) + 0.5;
@@ -312,9 +314,28 @@ function turnLogic( ) {
 
 function moveSnake( ) {
   if ( directionsQueue.length > 0 ) snakeDir = directionsQueue.pop( );
-  if ( checkCollision( ) ) {
+  clearedTile = false;
+  let col = checkCollision( );
+  if ( col ) {
     if ( usedCourtesyTurn ) {
-      reset( "self-collision" );
+      if ( col === "snake" ) {
+        reset( "self-collision" );
+        return;
+      } else {
+        usedCourtesyTurn = false;
+        clearedTile = true;
+        let vector = dirToVector( snakeDir );
+        let tx = snakeX + vector.x,
+            ty = snakeY + vector.y;
+        let region = regions.get( Math.floor( tx / REGIONSIZE ) + "/" + Math.floor( ty / REGIONSIZE ) );
+        let cell = region.get( mod( tx, REGIONSIZE ), mod( ty, REGIONSIZE ) );
+        if ( cell.mine ) {
+          reset( "explosion" );
+        } else {
+          cell.covered = false;
+        }
+        return;
+      }
     } else {
       usedCourtesyTurn = true;
       return;
@@ -333,14 +354,15 @@ function checkCollision( ) {
   let vector = dirToVector( snakeDir );
   let tx = snakeX + vector.x,
       ty = snakeY + vector.y;
-  let collided = false;
+  let region = regions.get( Math.floor( tx / REGIONSIZE ) + "/" + Math.floor( ty / REGIONSIZE ) );
+  let cell = region.get( mod( tx, REGIONSIZE ), mod( ty, REGIONSIZE ) );
+  if ( cell.covered ) return "cell";
   for ( let i = 1; i < snake.length; i++ ) {
     if ( snake[ i ].x === tx && snake[ i ].y === ty ) {
-      collided = true;
-      break;
+      return "snake";
     }
   }
-  return collided;
+  return null;
 }
 
 let debugmodecounter = 0;
