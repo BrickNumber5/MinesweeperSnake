@@ -113,6 +113,8 @@ let textureAtlas;
   requestAnimationFrame( draw );
 } )( );
 
+let paused = true;
+
 window.onresize = setCanvasSize;
 function setCanvasSize( ) {
   width  = cnv.width  = window.innerWidth;
@@ -142,6 +144,8 @@ function initGame( ) {
   eatenApple = false;
   
   clearedTileAnimations.clear( );
+  
+  paused = true;
 }
 
 let clearedTileAnimations = new Set( );
@@ -308,8 +312,8 @@ function drawClearedTileAnimations( ) {
 
 function drawSnake( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let tailFrozen = usedCourtesyTurn || clearedTile || eatenApple,
-      headFrozen = usedCourtesyTurn || clearedTile;
+  let tailFrozen = usedCourtesyTurn || clearedTile || paused || eatenApple,
+      headFrozen = usedCourtesyTurn || clearedTile || paused;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
   ctx.lineCap = "round";
@@ -345,8 +349,11 @@ function drawSnake( ) {
 
 function updateCamera( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let headFrozen = usedCourtesyTurn || clearedTile;
-  if ( !headFrozen ) {
+  let headFrozen = usedCourtesyTurn || clearedTile || paused;
+  if ( headFrozen ) {
+    cameraX = snakeX + 0.5;
+    cameraY = snakeY + 0.5;
+  } else {
     cameraX = lerp( snake.at( -2 ).x, snakeX, turnAnimation ) + 0.5;
     cameraY = lerp( snake.at( -2 ).y, snakeY, turnAnimation ) + 0.5;
   }
@@ -388,6 +395,8 @@ function drawDebugMines( ) {
 }
 
 function turnLogic( ) {
+  if ( paused === true ) return;
+  paused = false;
   moveSnake( );
 }
 
@@ -455,6 +464,14 @@ function checkCollision( ) {
 
 let debugmodecounter = 0;
 
+function fromDir( px, py, nx, ny ) {
+  if ( ny - py ===  1 ) return DIRECTION.DOWN;
+  if ( nx - px ===  1 ) return DIRECTION.LEFT;
+  if ( ny - py === -1 ) return DIRECTION.UP;
+  if ( nx - px === -1 ) return DIRECTION.RIGHT;
+  return -1;
+}
+
 window.addEventListener( "keydown", e => {
   let dir = null;
   switch( e.key ) {
@@ -483,11 +500,18 @@ window.addEventListener( "keydown", e => {
       break;
   }
   if ( dir !== null && directionsQueue.length < 5 ) {
-    let dq0 = directionsQueue[ 0 ] ?? snakeDir;
-    if (
-         ( ( dir === DIRECTION.UP   || dir === DIRECTION.DOWN  ) && ( dq0 === DIRECTION.LEFT || dq0 === DIRECTION.RIGHT ) )
-      || ( ( dir === DIRECTION.LEFT || dir === DIRECTION.RIGHT ) && ( dq0 === DIRECTION.UP   || dq0 === DIRECTION.DOWN  ) )
-    ) directionsQueue.unshift( dir );
+    if ( paused ) {
+      if ( dir !== fromDir( snake.at( -2 ).x, snake.at( -2 ).y, snakeX, snakeY ) ) {
+        paused = 2;
+        directionsQueue.unshift( dir );
+      }
+    } else {
+      let dq0 = directionsQueue[ 0 ] ?? snakeDir;
+      if (
+           ( ( dir === DIRECTION.UP   || dir === DIRECTION.DOWN  ) && ( dq0 === DIRECTION.LEFT || dq0 === DIRECTION.RIGHT ) )
+        || ( ( dir === DIRECTION.LEFT || dir === DIRECTION.RIGHT ) && ( dq0 === DIRECTION.UP   || dq0 === DIRECTION.DOWN  ) )
+      ) directionsQueue.unshift( dir );
+    }
   }
 } );
 
