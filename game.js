@@ -16,6 +16,7 @@ const COLORS = {
   SNAKE: "#840ebf",
   NUMBER: [ null, "#db4545", "#db7145", "#6de30e", "#004687", "#9500aa", "#e31849", "#0c0027", "#bae5db" ],
   APPLE: "#bf0e0e",
+  APPLELEAF: "#0ebf34",
   DEBUG: "#cc2222"
 }
 
@@ -242,9 +243,10 @@ function spawnApples( ) {
     let x = Math.floor( Math.random( ) * REGIONSIZE ),
         y = Math.floor( Math.random( ) * REGIONSIZE );
     if ( region.get( x, y ).mine ) continue outer;
-    if ( !region.get( x, y ).covered && Math.random( ) > 0.1 ) return;
+    if ( !region.get( x, y ).covered && Math.random( ) > 0.1 ) continue outer;
     x = region.wx + x;
     y = region.wy + y;
+    if ( sqrdist( x, y, snakeX, snakeY ) <= 64 ) continue outer;
     for ( let i = 1; i < snake.length; i++ ) {
       if ( x === snake[ i ].x && y === snake[ i ].y ) continue outer;
     }
@@ -284,6 +286,12 @@ function drawApples( ) {
       ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell, yCell, CELLSIZE, CELLSIZE );
     }
   } );
+  if ( eatenApple ) {
+    let xCell = CELLSIZE * ( snakeX - cameraX ) + width / 2,
+        yCell = CELLSIZE * ( snakeY - cameraY ) + height / 2;
+    let offset = CELLSIZE * timeSinceLastTurn / TURNTIME
+    ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
+  }
 }
 
 function drawClearedTileAnimations( ) {
@@ -523,6 +531,10 @@ function createTextureAtlas( ) {
   actx.moveTo( 950, 50 );
   actx.lineTo( 950, 50 );
   actx.stroke( );
+  actx.fillStyle = COLORS.APPLELEAF;
+  actx.beginPath( );
+  actx.ellipse( 950, 20, 20, 10, -Math.PI / 4, 0, 2 * Math.PI );
+  actx.fill( );
   
   // document.body.appendChild( atlas );
 }
