@@ -11,3 +11,6 @@
  - [ ] Add Controls to 0,0
  - [x] Add tile clearing animation
  - [ ] Improve input queing system by predicting snake's position
+ - [ ] Create Favicon
+ - [ ] Create Paused Mode
+ - [ ] Explosions
