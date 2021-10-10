@@ -14,6 +14,7 @@ const COLORS = {
   CLEARED: [ "#7bb7ff", "#56a3ff" ],
   COVERED: [ "#475568", "#2b394c" ],
   SNAKE: "#840ebf",
+  NUMBER: [ null, "#db4545", "#db7145", "#6de30e", "#004687", "#9500aa", "#e31849", "#0c0027", "#bae5db" ],
   DEBUG: "#cc2222"
 }
 
@@ -97,11 +98,12 @@ class Region {
   }
 }
 
+let textureAtlas;
+
 ( async ( ) => {
   let ff = await new FontFace( "Roboto Bold Modified", "url(robotomodified/Roboto-Bold-Modified.ttf)" ).load( );
   document.fonts.add( ff );
-  ctx.font = `${ 0.8 * CELLSIZE }px "Roboto Bold Modified"`;
-  ctx.textAlign = "center";
+  createTextureAtlas( );
   initGame( );
   requestAnimationFrame( draw );
 } )( );
@@ -110,8 +112,6 @@ window.onresize = setCanvasSize;
 function setCanvasSize( ) {
   width  = cnv.width  = window.innerWidth;
   height = cnv.height = window.innerHeight;
-  ctx.font = `${ 0.8 * CELLSIZE }px "Roboto Bold Modified"`;
-  ctx.textAlign = "center";
 }
 
 function initGame( ) {
@@ -219,8 +219,7 @@ function drawGrid( ) {
       ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
       if ( !cell.covered && cell.number > 0 ) {
-        ctx.fillStyle = "white";
-        ctx.fillText( cell.number.toString( ), xCell + CELLSIZE / 2, yCell + CELLSIZE * 0.75 );
+        ctx.drawImage( textureAtlas, 100 * cell.number, 0, 100, 100, xCell, yCell, CELLSIZE, CELLSIZE );
       }
     }
   }
@@ -395,6 +394,27 @@ function generateWorldAsNeeded( ) {
       }
     }
   }
+}
+
+function createTextureAtlas( ) {
+  // Here textureAtlas is the predefined global variable
+  let atlas = textureAtlas = document.createElement( "canvas" );
+  atlas.width = 1000;
+  atlas.height = 100;
+  let actx  = atlas.getContext( "2d" );
+  
+  actx.font = '80px "Roboto Bold Modified"';
+  actx.textAlign = "center";
+  actx.strokeStyle = "white";
+  actx.lineWidth = 5;
+  actx.lineJoin = "round";
+  for ( let i = 1; i <= 8; i++ ) {
+    actx.strokeText( i.toString( ), 100 * i + 50, 75 );
+    actx.fillStyle = COLORS.NUMBER[ i ];
+    actx.fillText( i.toString( ), 100 * i + 50, 75 );
+  }
+  
+  // document.body.appendChild( atlas );
 }
 
 function reset( reason ) {

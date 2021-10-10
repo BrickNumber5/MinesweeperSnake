@@ -1,7 +1,7 @@
 # TODO
 
- - [ ] Colorize digits
- - [ ] Prerender digits for preformance and rendering consistency reasons
+ - [x] Colorize digits
+ - [x] Prerender digits for preformance and rendering consistency reasons
  - [ ] Add tile uncovering mechanic
  - [ ] Add Apples
  - [ ] Give the snake eyes
