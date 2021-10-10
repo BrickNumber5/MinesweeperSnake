@@ -132,10 +132,14 @@ function initGame( ) {
   
   regions = new Map( );
   regions.set( "0/0", new Region( 0, 0, true ) );
+  
+  clearedTileAnimations.clear( );
 }
 
+let clearedTileAnimations = new Set( );
+
 // Core Loop
-let prevTime = -1, elapsedTime, timeSinceLastTurn = 0;
+let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
 function draw( time ) {
   if ( prevTime === -1 || time - prevTime > 5000 ) {
     prevTime = time;
@@ -147,10 +151,15 @@ function draw( time ) {
   prevTime = time;
   
   generateWorldAsNeeded( );
-  updateCells( );
+  timeSinceLastCellUpdate += elapsedTime;
+  if ( timeSinceLastCellUpdate >= TURNTIME / 3 ) {
+    timeSinceLastCellUpdate -= TURNTIME / 3;
+    updateCells( );
+  }
   
   updateCamera( );
   drawGrid( );
+  if ( clearedTileAnimations.size > 0 ) drawClearedTileAnimations( );
   if ( DEBUGMODE ) drawDebugRegions( );
   if ( DEBUGMODE ) drawDebugMines( );
   drawSnake( );
@@ -201,12 +210,21 @@ function updateCells( ) {
           let nx = x + i, ny = y + j;
           let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
           let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE ) );
-          if ( !neighborCell.covered && neighborCell.number === 0 ) toClear.push( cell );
+          if ( !neighborCell.covered && neighborCell.number === 0 ) toClear.push( { x: nx, y: ny, c: cell } );
         }
       }
     }
   }
-  toClear.forEach( cell => cell.covered = false );
+  clearedTileAnimations.forEach( t => { t.time--; if ( t.time <= 0 ) clearedTileAnimations.delete( t ) } );
+  toClear.forEach( cell => {
+    cell.c.covered = false;
+    if ( cell.x >= Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ) - 1
+      && cell.x <= Math.ceil(  cameraX + ( width  / 2 ) / CELLSIZE ) + 1
+      && cell.y >= Math.floor( cameraY - ( height / 2 ) / CELLSIZE ) - 1
+      && cell.y <= Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ) + 1 ) {
+      clearedTileAnimations.add( { x: cell.x, y: cell.y, time: 3 } );
+    }
+  } );
 }
 
 function drawGrid( ) {
@@ -226,6 +244,18 @@ function drawGrid( ) {
       }
     }
   }
+}
+
+function drawClearedTileAnimations( ) {
+  clearedTileAnimations.forEach( tile => {
+    let { x, y, time } = tile;
+    let t = timeSinceLastCellUpdate + ( 3 - time ) * ( TURNTIME / 3 );
+    ctx.fillStyle = COLORS.COVERED[ ( x + y ) & 1 ];
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
+        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let offset = ( t / TURNTIME ) * CELLSIZE;
+    ctx.fillRect( xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
+  } );
 }
 
 function drawSnake( ) {
@@ -334,6 +364,7 @@ function moveSnake( ) {
           reset( "explosion" );
         } else {
           cell.covered = false;
+          clearedTileAnimations.add( { x: tx, y: ty, time: 3 } );
         }
         return;
       }

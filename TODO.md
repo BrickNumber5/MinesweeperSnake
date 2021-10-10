@@ -9,5 +9,5 @@
  - [ ] Add score and highscore
  - [ ] Add more information to debug mode
  - [ ] Add Controls to 0,0
- - [ ] Add tile clearing animation
+ - [x] Add tile clearing animation
  - [ ] Improve input queing system by predicting snake's position
