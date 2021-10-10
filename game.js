@@ -116,14 +116,13 @@ function setCanvasSize( ) {
 }
 
 function initGame( ) {
-  snakeX = 0;
-  snakeY = 0;
+  snakeX = 9;
+  snakeY = 9;
   
   snakeDir = DIRECTION.RIGHT;
   directionsQueue = [ ];
   
-  // snake = [ { x: -3, y: 0 }, { x: -2, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 0 } ];
-  snake = Array.from( { length: 100 }, ( _, i ) => ( { x: i - 99, y: 0 } ) );
+  snake = [ { x: 5, y: 9 }, { x: 6, y: 9 }, { x: 7, y: 9 }, { x: 8, y: 9 }, { x: 9, y: 9 } ];
   
   cameraX = 0;
   cameraY = 0;
@@ -191,6 +190,7 @@ function updateCells( ) {
       cell.number = num;
     }
   }
+  let toClear = [ ];
   for ( let x = xLower; x < xUpper; x++ ) {
     for ( let y = yLower; y < yUpper; y++ ) {
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
@@ -201,11 +201,12 @@ function updateCells( ) {
           let nx = x + i, ny = y + j;
           let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
           let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE ) );
-          if ( !neighborCell.covered && neighborCell.number === 0 ) cell.covered = false;
+          if ( !neighborCell.covered && neighborCell.number === 0 ) toClear.push( cell );
         }
       }
     }
   }
+  toClear.forEach( cell => cell.covered = false );
 }
 
 function drawGrid( ) {
