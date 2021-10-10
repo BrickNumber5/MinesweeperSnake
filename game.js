@@ -210,7 +210,7 @@ function updateCells( ) {
           let nx = x + i, ny = y + j;
           let neighborCellCoordinate = Math.floor( nx / REGIONSIZE ) + "/" + Math.floor( ny / REGIONSIZE );
           let neighborCell = regions.get( neighborCellCoordinate ).get( mod( nx, REGIONSIZE ), mod( ny, REGIONSIZE ) );
-          if ( !neighborCell.covered && neighborCell.number === 0 ) toClear.push( { x: nx, y: ny, c: cell } );
+          if ( !neighborCell.covered && neighborCell.number === 0 ) toClear.push( { x, y, c: cell } );
         }
       }
     }
