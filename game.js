@@ -136,6 +136,7 @@ function initGame( ) {
   regions = new Map( );
   regions.set( "0/0", new Region( 0, 0, true ) );
   
+  apples.clear( );
   apples.add( { x: 11, y: 9 } );
   eatenApple = false;
   
