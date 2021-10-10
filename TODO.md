@@ -3,7 +3,7 @@
  - [x] Colorize digits
  - [x] Prerender digits for preformance and rendering consistency reasons
  - [x] Add tile uncovering mechanic
- - [ ] Add Apples
+ - [x] Add Apples
  - [ ] Give the snake eyes
  - [ ] Add SFX
  - [ ] Add score and highscore

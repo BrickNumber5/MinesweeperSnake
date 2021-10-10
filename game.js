@@ -15,6 +15,7 @@ const COLORS = {
   COVERED: [ "#475568", "#2b394c" ],
   SNAKE: "#840ebf",
   NUMBER: [ null, "#db4545", "#db7145", "#6de30e", "#004687", "#9500aa", "#e31849", "#0c0027", "#bae5db" ],
+  APPLE: "#bf0e0e",
   DEBUG: "#cc2222"
 }
 
@@ -99,6 +100,8 @@ class Region {
   }
 }
 
+let apples = new Set( ), eatenApple = false;
+
 let textureAtlas;
 
 ( async ( ) => {
@@ -133,6 +136,9 @@ function initGame( ) {
   regions = new Map( );
   regions.set( "0/0", new Region( 0, 0, true ) );
   
+  apples.add( { x: 11, y: 9 } );
+  eatenApple = false;
+  
   clearedTileAnimations.clear( );
 }
 
@@ -141,7 +147,7 @@ let clearedTileAnimations = new Set( );
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
 function draw( time ) {
-  if ( prevTime === -1 || time - prevTime > 5000 ) {
+  if ( prevTime === -1 || time - prevTime > 1000 ) {
     prevTime = time;
     requestAnimationFrame( draw );
     return;
@@ -159,6 +165,7 @@ function draw( time ) {
   
   updateCamera( );
   drawGrid( );
+  drawApples( );
   if ( clearedTileAnimations.size > 0 ) drawClearedTileAnimations( );
   if ( DEBUGMODE ) drawDebugRegions( );
   if ( DEBUGMODE ) drawDebugMines( );
@@ -225,6 +232,26 @@ function updateCells( ) {
       clearedTileAnimations.add( { x: cell.x, y: cell.y, time: 3 } );
     }
   } );
+  spawnApples( );
+}
+
+function spawnApples( ) {
+  outer: for ( region of regions ) {
+    region = region[ 1 ]; // for of loops are weird
+    let x = Math.floor( Math.random( ) * REGIONSIZE ),
+        y = Math.floor( Math.random( ) * REGIONSIZE );
+    if ( region.get( x, y ).mine ) continue outer;
+    if ( !region.get( x, y ).covered && Math.random( ) > 0.1 ) return;
+    x = region.wx + x;
+    y = region.wy + y;
+    for ( let i = 1; i < snake.length; i++ ) {
+      if ( x === snake[ i ].x && y === snake[ i ].y ) continue outer;
+    }
+    for ( apple of apples ) {
+      if ( sqrdist( x, y, apple.x, apple.y ) <= 1024 /* 32 ** 2 */ ) continue outer;
+    }
+    apples.add( { x, y } );
+  }
 }
 
 function drawGrid( ) {
@@ -236,7 +263,7 @@ function drawGrid( ) {
     let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
     for ( let y = yLower; y < yUpper; y++ ) {
       let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
-      let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
+      let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
       ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
       if ( !cell.covered && cell.number > 0 ) {
@@ -244,6 +271,18 @@ function drawGrid( ) {
       }
     }
   }
+}
+
+function drawApples( ) {
+  apples.forEach( apple => {
+    let { x, y } = apple;
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
+        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
+    if ( !cell.covered || DEBUGMODE ) {
+      ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell, yCell, CELLSIZE, CELLSIZE );
+    }
+  } );
 }
 
 function drawClearedTileAnimations( ) {
@@ -260,7 +299,7 @@ function drawClearedTileAnimations( ) {
 
 function drawSnake( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let tailFrozen = usedCourtesyTurn || clearedTile,
+  let tailFrozen = usedCourtesyTurn || clearedTile || eatenApple,
       headFrozen = usedCourtesyTurn || clearedTile;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
@@ -346,6 +385,7 @@ function turnLogic( ) {
 function moveSnake( ) {
   if ( directionsQueue.length > 0 ) snakeDir = directionsQueue.pop( );
   clearedTile = false;
+  eatenApple = false;
   let col = checkCollision( );
   if ( col ) {
     if ( usedCourtesyTurn ) {
@@ -379,7 +419,14 @@ function moveSnake( ) {
   snakeX += vector.x;
   snakeY += vector.y;
   snake.push( { x: snakeX, y: snakeY } );
-  snake.shift( );
+  for ( apple of apples ) {
+    if ( apple.x === snakeX && apple.y === snakeY ) {
+      apples.delete( apple );
+      eatenApple = true;
+      break;
+    }
+  }
+  if ( !eatenApple ) snake.shift( );
 }
 
 function checkCollision( ) {
@@ -467,6 +514,14 @@ function createTextureAtlas( ) {
     actx.fillStyle = COLORS.NUMBER[ i ];
     actx.fillText( i.toString( ), 100 * i + 50, 75 );
   }
+  
+  actx.strokeStyle = COLORS.APPLE;
+  actx.lineWidth = 80;
+  actx.lineCap = "round";
+  actx.beginPath( );
+  actx.moveTo( 950, 50 );
+  actx.lineTo( 950, 50 );
+  actx.stroke( );
   
   // document.body.appendChild( atlas );
 }
