@@ -7,7 +7,7 @@ const mod  = ( a, n ) => ( ( a % n ) + n ) % n;
 const sqrdist = ( x1, y1, x2, y2 ) => ( x2 - x1 ) ** 2 + ( y2 - y1 ) ** 2;
 const dist = ( x1, y1, x2, y2 ) => Math.sqrt( sqrdist( x1, y1, x2, y2 ) );
 
-const TURNTIME = 1200;
+const TURNTIME = 200;
 
 const CELLSIZE = 35;
 const COLORS = {
