@@ -10,7 +10,7 @@
  - [ ] Add more information to debug mode
  - [ ] Add Controls to 0,0
  - [x] Add tile clearing animation
- - [ ] Improve input queing system by predicting snake's position
+ - [x] Improve input queing system by predicting snake's position
  - [ ] Create Favicon
  - [x] Create Paused Mode
  - [ ] Explosions

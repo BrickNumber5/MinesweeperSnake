@@ -7,7 +7,7 @@ const mod  = ( a, n ) => ( ( a % n ) + n ) % n;
 const sqrdist = ( x1, y1, x2, y2 ) => ( x2 - x1 ) ** 2 + ( y2 - y1 ) ** 2;
 const dist = ( x1, y1, x2, y2 ) => Math.sqrt( sqrdist( x1, y1, x2, y2 ) );
 
-const TURNTIME = 200;
+const TURNTIME = 1200;
 
 const CELLSIZE = 35;
 const COLORS = {
@@ -17,7 +17,8 @@ const COLORS = {
   NUMBER: [ null, "#db4545", "#db7145", "#6de30e", "#004687", "#9500aa", "#e31849", "#0c0027", "#bae5db" ],
   APPLE: "#bf0e0e",
   APPLELEAF: "#0ebf34",
-  DEBUG: "#cc2222"
+  DEBUG: "#cc2222",
+  DEBUG2: "#228822"
 }
 
 const cnv = document.querySelector( ".main canvas" );
@@ -122,13 +123,13 @@ function setCanvasSize( ) {
 }
 
 function initGame( ) {
-  snakeX = 9;
+  snakeX = 8;
   snakeY = 9;
   
   snakeDir = DIRECTION.RIGHT;
   directionsQueue = [ ];
   
-  snake = [ { x: 5, y: 9 }, { x: 6, y: 9 }, { x: 7, y: 9 }, { x: 8, y: 9 }, { x: 9, y: 9 } ];
+  snake = [ { x: 4, y: 9 }, { x: 5, y: 9 }, { x: 6, y: 9 }, { x: 7, y: 9 }, { x: 8, y: 9 } ];
   
   cameraX = 0;
   cameraY = 0;
@@ -140,10 +141,12 @@ function initGame( ) {
   regions.set( "0/0", new Region( 0, 0, true ) );
   
   apples.clear( );
-  apples.add( { x: 11, y: 9 } );
+  apples.add( { x: 10, y: 9 } );
   eatenApple = false;
   
   clearedTileAnimations.clear( );
+  
+  projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
   
   paused = true;
 }
@@ -176,6 +179,7 @@ function draw( time ) {
   if ( DEBUGMODE ) drawDebugRegions( );
   if ( DEBUGMODE ) drawDebugMines( );
   drawSnake( );
+  if ( DEBUGMODE ) drawDebugProjectedSnake( );
   
   timeSinceLastTurn += elapsedTime;
   if ( timeSinceLastTurn >= TURNTIME ) {
@@ -394,14 +398,63 @@ function drawDebugMines( ) {
   }
 }
 
+function drawDebugProjectedSnake( ) {
+  let virtualSnake = [ ...snake, ...projectedSnake.extraSnake ].slice( projectedSnake.tailSans );
+  ctx.strokeStyle = COLORS.DEBUG2;
+  ctx.lineWidth = CELLSIZE * 0.25;
+  ctx.lineCap = "square";
+  ctx.lineJoin = "miter";
+  ctx.beginPath( );
+  ctx.moveTo( CELLSIZE * ( virtualSnake[ 1 ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( virtualSnake[ 1 ].y - cameraY + 0.5 ) + height / 2 );
+  for ( let i = 1; i < virtualSnake.length - 1; i++ ) {
+    ctx.lineTo( CELLSIZE * ( virtualSnake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( virtualSnake[ i ].y - cameraY + 0.5 ) + height / 2 );
+  }
+  let x = CELLSIZE * ( virtualSnake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
+      y = CELLSIZE * ( virtualSnake.at( -1 ).y - cameraY + 0.5 ) + height / 2;
+  ctx.lineTo( x, y );
+  ctx.stroke( );
+  let v = dirToVector( projectedSnake.direction );
+  x += v.x * 0.5 * CELLSIZE;
+  y += v.y * 0.5 * CELLSIZE;
+  if ( projectedSnake.state === "move" ) {
+    ctx.beginPath( );
+    ctx.moveTo( x + v.y * 0.25 * CELLSIZE, y - v.x * 0.25 * CELLSIZE );
+    ctx.lineTo( x + v.x * 0.25 * CELLSIZE, y + v.y * 0.25 * CELLSIZE );
+    ctx.lineTo( x - v.y * 0.25 * CELLSIZE, y + v.x * 0.25 * CELLSIZE );
+    ctx.stroke( );
+  } else if ( projectedSnake.state === "break" ) {
+    ctx.beginPath( );
+    ctx.moveTo( x, y );
+    ctx.lineTo( x, y )
+    ctx.stroke( );
+  } else if ( projectedSnake.state === "courtesy" ) {
+    ctx.beginPath( );
+    ctx.moveTo( x + ( -v.x + v.y ) * 0.125 * CELLSIZE, y + ( -v.x - v.y ) * 0.125 * CELLSIZE );
+    ctx.lineTo( x + (  v.x - v.y ) * 0.125 * CELLSIZE, y + (  v.x + v.y ) * 0.125 * CELLSIZE );
+    ctx.stroke( );
+    ctx.beginPath( );
+    ctx.moveTo( x + ( -v.x - v.y ) * 0.125 * CELLSIZE, y + ( -v.y + v.x ) * 0.125 * CELLSIZE );
+    ctx.lineTo( x + (  v.x + v.y ) * 0.125 * CELLSIZE, y + (  v.y - v.x ) * 0.125 * CELLSIZE );
+    ctx.stroke( );
+  }
+}
+
 function turnLogic( ) {
   if ( paused === true ) return;
   paused = false;
   moveSnake( );
+  projectState( );
 }
 
 function moveSnake( ) {
-  if ( directionsQueue.length > 0 ) snakeDir = directionsQueue.pop( );
+  if ( directionsQueue.length > 0 ) {
+    snakeDir = directionsQueue.pop( );
+    projectedSnake.tailSans--;
+    if ( projectedSnake.tailSans < 0 ) projectedSnake.tailSans = 0;
+    projectedSnake.extraSnake.shift( );
+  } else {
+    projectedSnake.direction = snakeDir;
+  }
   clearedTile = false;
   eatenApple = false;
   let col = checkCollision( );
@@ -472,6 +525,8 @@ function fromDir( px, py, nx, ny ) {
   return -1;
 }
 
+let projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
+
 window.addEventListener( "keydown", e => {
   let dir = null;
   switch( e.key ) {
@@ -500,20 +555,62 @@ window.addEventListener( "keydown", e => {
       break;
   }
   if ( dir !== null && directionsQueue.length < 5 ) {
-    if ( paused ) {
+    if ( paused === true ) {
       if ( dir !== fromDir( snake.at( -2 ).x, snake.at( -2 ).y, snakeX, snakeY ) ) {
         paused = 2;
+        projectedSnake.direction = dir;
+        projectedSnake.tailSans = 1;
+        let v = dirToVector( dir );
+        projectedSnake.extraSnake.push( { x: snakeX + v.x, y: snakeY + v.y } );
         directionsQueue.unshift( dir );
       }
     } else {
       let dq0 = directionsQueue[ 0 ] ?? snakeDir;
-      if (
-           ( ( dir === DIRECTION.UP   || dir === DIRECTION.DOWN  ) && ( dq0 === DIRECTION.LEFT || dq0 === DIRECTION.RIGHT ) )
-        || ( ( dir === DIRECTION.LEFT || dir === DIRECTION.RIGHT ) && ( dq0 === DIRECTION.UP   || dq0 === DIRECTION.DOWN  ) )
-      ) directionsQueue.unshift( dir );
+      let virtualSnake = [ ...snake, ...projectedSnake.extraSnake ].slice( projectedSnake.tailSans );
+      if ( dir !== projectedSnake.direction
+        && dir !== fromDir( virtualSnake.at( -2 ).x, virtualSnake.at( -2 ).y, virtualSnake.at( -1 ).x, virtualSnake.at( -1 ).y ) ) {
+        projectedSnake.direction = dir;
+        projectState( );
+        if ( projectedSnake.state === "move" ) {
+          projectedSnake.tailSans++;
+          let v = dirToVector( dir );
+          projectedSnake.extraSnake.push( { x: virtualSnake.at( -1 ).x + v.x, y: virtualSnake.at( -1 ).y + v.y } );
+        }
+        directionsQueue.unshift( dir );
+      }
     }
   }
 } );
+
+function projectState( ) {
+  let virtualSnake = [ ...snake, ...projectedSnake.extraSnake ].slice( projectedSnake.tailSans );
+  let x = virtualSnake.at( -1 ).x,
+      y = virtualSnake.at( -1 ).y;
+  let v = dirToVector( projectedSnake.direction );
+  x += v.x;
+  y += v.y;
+  let region = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) );
+  let cell = region.get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
+  if ( projectedSnake.state === "move" || projectedSnake.state === "break" ) {
+    if ( cell.covered ) {
+      projectedSnake.state = "courtesy";
+      return;
+    }
+    for ( let i = 1; i < virtualSnake.length; i++ ) {
+      if ( virtualSnake[ i ].x === x && virtualSnake[ i ].y === y ) {
+        projectedSnake.state = "courtesy";
+        return;
+      }
+    }
+    projectedSnake.state = "move";
+  } else if ( projectedSnake.state === "courtesy" ) {
+    if ( cell.covered ) {
+      projectedSnake.state = "break";
+      return;
+    }
+    projectedSnake.state = "move";
+  }
+}
 
 function generateWorldAsNeeded( ) {
   const xLower = Math.floor( ( cameraX - width / CELLSIZE ) / REGIONSIZE ) - 1,
