@@ -518,9 +518,9 @@ function checkCollision( ) {
 let debugmodecounter = 0;
 
 function fromDir( px, py, nx, ny ) {
-  if ( ny - py ===  1 ) return DIRECTION.DOWN;
+  if ( ny - py === -1 ) return DIRECTION.DOWN;
   if ( nx - px ===  1 ) return DIRECTION.LEFT;
-  if ( ny - py === -1 ) return DIRECTION.UP;
+  if ( ny - py ===  1 ) return DIRECTION.UP;
   if ( nx - px === -1 ) return DIRECTION.RIGHT;
   return -1;
 }
@@ -573,6 +573,12 @@ window.addEventListener( "keydown", e => {
         projectState( );
         if ( projectedSnake.state === "move" ) {
           projectedSnake.tailSans++;
+          for ( apple of apples ) {
+            if ( virtualSnake.at( -1 ).x === apple.x && virtualSnake.at( -1 ).y === apple.y ) {
+              projectedSnake.tailSans--;
+              break;
+            }
+          }
           let v = dirToVector( dir );
           projectedSnake.extraSnake.push( { x: virtualSnake.at( -1 ).x + v.x, y: virtualSnake.at( -1 ).y + v.y } );
         }
