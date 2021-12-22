@@ -116,6 +116,10 @@ let textureAtlas;
 
 let paused = true;
 
+let score = 0, highscore = +( localStorage.getItem( "minesweeperSnake::highscore" ) ?? 0 );
+function setScore( s ) { score = s; if ( score > highscore ) { highscore = score; localStorage.setItem( "minesweeperSnake::highscore", score ); } }
+function addScore( s ) { setScore( score + s ); }
+
 window.onresize = setCanvasSize;
 function setCanvasSize( ) {
   width  = cnv.width  = window.innerWidth;
@@ -124,12 +128,12 @@ function setCanvasSize( ) {
 
 function initGame( ) {
   snakeX = 8;
-  snakeY = 9;
+  snakeY = 8;
   
   snakeDir = DIRECTION.RIGHT;
   directionsQueue = [ ];
   
-  snake = [ { x: 4, y: 9 }, { x: 5, y: 9 }, { x: 6, y: 9 }, { x: 7, y: 9 }, { x: 8, y: 9 } ];
+  snake = [ { x: 4, y: 8 }, { x: 5, y: 8 }, { x: 6, y: 8 }, { x: 7, y: 8 }, { x: 8, y: 8 } ];
   
   cameraX = 0;
   cameraY = 0;
@@ -141,7 +145,7 @@ function initGame( ) {
   regions.set( "0/0", new Region( 0, 0, true ) );
   
   apples.clear( );
-  apples.add( { x: 10, y: 9 } );
+  apples.add( { x: 10, y: 8 } );
   eatenApple = false;
   
   clearedTileAnimations.clear( );
@@ -149,6 +153,8 @@ function initGame( ) {
   projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
   
   paused = true;
+  
+  score = 0;
 }
 
 let clearedTileAnimations = new Set( );
@@ -476,6 +482,7 @@ function moveSnake( ) {
         } else {
           cell.covered = false;
           clearedTileAnimations.add( { x: tx, y: ty, time: 3 } );
+          addScore( ( snake.length - 1 ) * Math.floor( ( Math.abs( tx ) + Math.abs( ty ) ) / REGIONSIZE ) );
         }
         return;
       }
