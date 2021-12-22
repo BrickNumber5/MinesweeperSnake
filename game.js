@@ -150,6 +150,8 @@ function initGame( ) {
   
   clearedTileAnimations.clear( );
   
+  scoreAnimations.clear( );
+  
   projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
   
   paused = true;
@@ -157,7 +159,9 @@ function initGame( ) {
   score = 0;
 }
 
-let clearedTileAnimations = new Set( );
+const clearedTileAnimations = new Set( );
+
+const scoreAnimations = new Set( );
 
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
@@ -186,6 +190,7 @@ function draw( time ) {
   if ( DEBUGMODE ) drawDebugMines( );
   drawSnake( );
   if ( DEBUGMODE ) drawDebugProjectedSnake( );
+  if ( scoreAnimations.size > 0 ) drawScoreAnimations( );
   
   timeSinceLastTurn += elapsedTime;
   if ( timeSinceLastTurn >= TURNTIME ) {
@@ -238,7 +243,8 @@ function updateCells( ) {
       }
     }
   }
-  clearedTileAnimations.forEach( t => { t.time--; if ( t.time <= 0 ) clearedTileAnimations.delete( t ) } );
+  scoreAnimations.forEach( s => { s.time--; if ( s.time <= 0 ) scoreAnimations.delete( s ); } );
+  clearedTileAnimations.forEach( t => { t.time--; if ( t.time <= 0 ) clearedTileAnimations.delete( t ); } );
   toClear.forEach( cell => {
     cell.c.covered = false;
     if ( cell.x >= Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ) - 1
@@ -317,6 +323,20 @@ function drawClearedTileAnimations( ) {
         yCell = CELLSIZE * ( y - cameraY ) + height / 2;
     let offset = ( t / TURNTIME ) * CELLSIZE;
     ctx.fillRect( xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
+  } );
+}
+
+function drawScoreAnimations( ) {
+  scoreAnimations.forEach( scoreobj => {
+    let { x, y, v, time } = scoreobj;
+    const t = time > 12 ? 32 - 2 * time : time > 8 ? 8 : time;
+    ctx.fillStyle = `#fff${ ( t * 16 ).toString( 16 )[ 0 ] }`;
+    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
+        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    ctx.font = `${ CELLSIZE * ( t / 8 ) }px "Roboto Bold Modified"`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText( v, xCell + CELLSIZE / 2, yCell + CELLSIZE / 2 );
   } );
 }
 
@@ -482,7 +502,9 @@ function moveSnake( ) {
         } else {
           cell.covered = false;
           clearedTileAnimations.add( { x: tx, y: ty, time: 3 } );
-          addScore( ( snake.length - 1 ) * Math.floor( ( Math.abs( tx ) + Math.abs( ty ) ) / REGIONSIZE ) );
+          const s = Math.floor( ( snake.length - 1 ) * ( Math.abs( tx ) + Math.abs( ty ) ) / REGIONSIZE );
+          scoreAnimations.add( { x: tx, y: ty, v: s, time: 16 } );
+          addScore( s );
         }
         return;
       }
@@ -501,6 +523,9 @@ function moveSnake( ) {
     if ( apple.x === snakeX && apple.y === snakeY ) {
       apples.delete( apple );
       eatenApple = true;
+      const s = Math.floor( 100 );
+      scoreAnimations.add( { x: snakeX, y: snakeY, v: s, time: 16 } );
+      addScore( s );
       break;
     }
   }
