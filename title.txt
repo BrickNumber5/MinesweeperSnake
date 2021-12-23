@@ -1,0 +1,143 @@
+#### Left Border
+Move 4 31
+Line 4 4
+Line 11 4
+Move 6 31
+Line 6 6
+Line 11 6
+
+#### Right Border
+Move 49 4
+Line 56 4
+Line 56 31
+Move 49 6
+Line 54 6
+Line 54 31
+
+#### M
+Move 12 7
+Line 12 3
+Line 13 4
+Line 14 3
+Line 14 7
+
+#### i
+Move 15 5
+Line 16 5
+Line 16 7
+Move 15 7
+Line 17 7
+Move 16 4
+Line 16 4
+
+#### n
+Move 18 7
+Line 18 5
+Move 18 6
+Line 19 5
+Line 20 5
+Line 20 7
+
+#### e
+Move 23 7
+Line 21 7
+Line 21 5
+Line 23 5
+Line 23 6
+Line 21 6
+
+#### s
+Move 26 5
+Line 24 5
+Line 24 6
+Line 26 6
+Line 26 7
+Line 24 7
+
+#### w
+Move 27 5
+Line 27 7
+Line 28 6
+Line 29 7
+Line 29 5
+
+#### e
+Move 32 7
+Line 30 7
+Line 30 5
+Line 32 5
+Line 32 6
+Line 30 6
+
+#### e
+Move 35 7
+Line 33 7
+Line 33 5
+Line 35 5
+Line 35 6
+Line 33 6
+
+#### p
+Move 36 8
+Line 36 5
+Line 38 5
+Line 38 7
+Line 36 7
+
+#### e
+Move 41 7
+Line 39 7
+Line 39 5
+Line 41 5
+Line 41 6
+Line 39 6
+
+#### r
+Move 42 7
+Line 42 5
+Move 42 6
+Line 43 5
+Line 44 5
+
+#### S
+Move 35 9
+Line 35 8
+Line 33 8
+Line 33 10
+Line 35 10
+Line 35 12
+Line 33 12
+Line 33 11
+
+#### n
+Move 36 10
+Line 36 12
+Move 36 11
+Line 37 10
+Line 38 10
+Line 38 12
+
+#### a
+Move 41 11
+Line 40 12
+Line 39 12
+Line 39 10
+Line 41 10
+Line 41 12
+
+#### k
+Move 42 8
+Line 42 12
+Move 44 9
+Line 42 11
+Move 43 10
+Line 44 11
+Line 44 12
+
+#### e
+Move 47 12
+Line 45 12
+Line 45 10
+Line 47 10
+Line 47 11
+Line 45 11

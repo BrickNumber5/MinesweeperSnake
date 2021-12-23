@@ -17,6 +17,7 @@ const COLORS = {
   NUMBER: [ null, "#db4545", "#db7145", "#6de30e", "#004687", "#9500aa", "#e31849", "#0c0027", "#bae5db" ],
   APPLE: "#bf0e0e",
   APPLELEAF: "#0ebf34",
+  TITLETEXT: "#fff",
   DEBUG: "#cc2222",
   DEBUG2: "#228822"
 }
@@ -109,7 +110,8 @@ let textureAtlas;
 ( async ( ) => {
   let ff = await new FontFace( "Roboto Bold Modified", "url(robotomodified/Roboto-Bold-Modified.ttf)" ).load( );
   document.fonts.add( ff );
-  createTextureAtlas( );
+  let titleTextureInstructions = await fetch( "./title.txt" ).then( f => f.text( ) );
+  createTextureAtlas( titleTextureInstructions );
   initGame( );
   requestAnimationFrame( draw );
 } )( );
@@ -294,6 +296,11 @@ function drawGrid( ) {
       }
     }
   }
+  ctx.drawImage(
+    textureAtlas,
+    0, 100, 600, 600,
+    CELLSIZE * ( 5 - cameraX ) + width / 2, CELLSIZE * ( 5 - cameraY ) + height / 2, 6 * CELLSIZE, 6 * CELLSIZE
+  );
 }
 
 function drawApples( ) {
@@ -665,11 +672,11 @@ function generateWorldAsNeeded( ) {
   }
 }
 
-function createTextureAtlas( ) {
+function createTextureAtlas( titleTextureInstructions ) {
   // Here textureAtlas is the predefined global variable
   let atlas = textureAtlas = document.createElement( "canvas" );
   atlas.width = 1000;
-  atlas.height = 100;
+  atlas.height = 700;
   let actx  = atlas.getContext( "2d" );
   
   actx.font = '80px "Roboto Bold Modified"';
@@ -694,6 +701,24 @@ function createTextureAtlas( ) {
   actx.beginPath( );
   actx.ellipse( 950, 20, 20, 10, -Math.PI / 4, 0, 2 * Math.PI );
   actx.fill( );
+  
+  let tis = titleTextureInstructions.split( /\r?\n/ ).map( i => {
+    const [ instruction, x, y ] = i.split( " " );
+    return { instruction, x: +x, y: +y };
+  } );
+  
+  actx.strokeStyle = COLORS.TITLETEXT;
+  actx.lineWidth = 5;
+  actx.beginPath( );
+  for ( ti of tis ) {
+    const { instruction, x, y } = ti;
+    if ( instruction === "Move" ) {
+      actx.moveTo( x * 10, 100 + y * 10 );
+    } else if ( instruction === "Line" ) {
+      actx.lineTo( x * 10, 100 + y * 10 );
+    }
+  }
+  actx.stroke( );
   
   // document.body.appendChild( atlas );
 }
