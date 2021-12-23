@@ -702,20 +702,31 @@ function createTextureAtlas( titleTextureInstructions ) {
   actx.ellipse( 950, 20, 20, 10, -Math.PI / 4, 0, 2 * Math.PI );
   actx.fill( );
   
-  let tis = titleTextureInstructions.split( /\r?\n/ ).map( i => {
-    const [ instruction, x, y ] = i.split( " " );
-    return { instruction, x: +x, y: +y };
+  let tis = titleTextureInstructions.split( /(?:\r?\n)+/ ).map( i => {
+    const [ instruction, ...params ] = i.split( " " );
+    return { instruction, params: params.map( n => +n ), text: i };
   } );
   
   actx.strokeStyle = COLORS.TITLETEXT;
-  actx.lineWidth = 5;
+  actx.lineWidth = 8;
   actx.beginPath( );
   for ( ti of tis ) {
-    const { instruction, x, y } = ti;
+    const { instruction, params, text } = ti;
     if ( instruction === "Move" ) {
+      const [ x, y ] = params;
       actx.moveTo( x * 10, 100 + y * 10 );
     } else if ( instruction === "Line" ) {
+      const [ x, y ] = params;
       actx.lineTo( x * 10, 100 + y * 10 );
+    } else if ( instruction === "####" ) {
+      // Comment: Ignore
+    } else if ( instruction === "Color" ) {
+      const [ r, g, b, a = 1 ] = params;
+      actx.stroke( );
+      actx.strokeStyle = `rgba(${ r }, ${ g }, ${ b }, ${ a })`;
+      actx.beginPath( );
+    } else {
+      console.warn( `Unknown instruction "${ text }"` );
     }
   }
   actx.stroke( );

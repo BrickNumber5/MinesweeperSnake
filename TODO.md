@@ -8,7 +8,7 @@
  - [ ] Add SFX
  - [ ] Add score and highscore
  - [ ] Add more information to debug mode
- - [ ] Add Controls to 0,0
+ - [x] Add Controls to 0,0
  - [x] Add tile clearing animation
  - [x] Improve input queing system by predicting snake's position
  - [ ] Create Favicon

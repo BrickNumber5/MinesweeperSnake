@@ -141,3 +141,106 @@ Line 45 10
 Line 47 10
 Line 47 11
 Line 45 11
+
+#### WASD
+
+#### W
+Move 11 9
+Line 15 9
+Line 15 13
+Line 11 13
+Line 11 9
+Move 12 10
+Line 12 12
+Line 13 11
+Line 14 12
+Line 14 10
+
+#### A
+Move 7 14
+Line 11 14
+Line 11 18
+Line 7 18
+Line 7 14
+Move 10 16
+Line 9 17
+Line 8 17
+Line 8 15
+Line 10 15
+Line 10 17
+
+#### S
+Move 12 14
+Line 16 14
+Line 16 18
+Line 12 18
+Line 12 14
+Move 15 15
+Line 13 15
+Line 13 16
+Line 15 16
+Line 15 17
+Line 13 17
+
+#### D
+Move 17 14
+Line 21 14
+Line 21 18
+Line 17 18
+Line 17 14
+Move 18 15
+Line 19 15
+Line 20 16
+Line 20 17
+Line 18 17
+Line 18 15
+
+#### Arrows
+
+#### Up Arrow
+Move 12 21
+Line 16 21
+Line 16 25
+Line 12 25
+Line 12 21
+Move 13 23
+Line 14 22
+Line 15 23
+Move 14 22
+Line 14 24
+
+#### Left Arrow
+Move 7 24
+Line 11 24
+Line 11 28
+Line 7 28
+Line 7 24
+Move 9 25
+Line 8 26
+Line 9 27
+Move 8 26
+Line 10 26
+
+#### Down Arrow
+Move 12 26
+Line 16 26
+Line 16 30
+Line 12 30
+Line 12 26
+Move 13 28
+Line 14 29
+Line 15 28
+Move 14 29
+Line 14 27
+
+#### Right Arrow
+Move 17 24
+Line 21 24
+Line 21 28
+Line 17 28
+Line 17 24
+Move 19 25
+Line 20 26
+Line 19 27
+Move 20 26
+Line 18 26
