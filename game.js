@@ -119,7 +119,15 @@ let textureAtlas;
 let paused = true;
 
 let score = 0, highscore = +( localStorage.getItem( "minesweeperSnake::highscore" ) ?? 0 );
-function setScore( s ) { score = s; if ( score > highscore ) { highscore = score; localStorage.setItem( "minesweeperSnake::highscore", score ); } }
+function setScore( s ) {
+  score = s;
+  if ( score > 0 ) scoreUpdateAnimationTime = 4;
+  if ( score > highscore ) {
+    highscore = score;
+    highscoreUpdateAnimationTime = 4;
+    localStorage.setItem( "minesweeperSnake::highscore", score );
+  }
+}
 function addScore( s ) { setScore( score + s ); }
 
 window.onresize = setCanvasSize;
@@ -158,12 +166,14 @@ function initGame( ) {
   
   paused = true;
   
-  score = 0;
+  setScore( 0 );
 }
 
 const clearedTileAnimations = new Set( );
 
 const scoreAnimations = new Set( );
+
+let scoreUpdateAnimationTime = 0, highscoreUpdateAnimationTime = 0;
 
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
@@ -247,6 +257,8 @@ function updateCells( ) {
   }
   scoreAnimations.forEach( s => { s.time--; if ( s.time <= 0 ) scoreAnimations.delete( s ); } );
   clearedTileAnimations.forEach( t => { t.time--; if ( t.time <= 0 ) clearedTileAnimations.delete( t ); } );
+  if ( scoreUpdateAnimationTime > 0 ) scoreUpdateAnimationTime--;
+  if ( highscoreUpdateAnimationTime > 0 ) highscoreUpdateAnimationTime--;
   toClear.forEach( cell => {
     cell.c.covered = false;
     if ( cell.x >= Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ) - 1
@@ -305,11 +317,22 @@ function drawGrid( ) {
       }
     }
   }
-  ctx.drawImage(
-    textureAtlas,
-    0, 100, 600, 600,
-    ...worldToScreenArr( 5, 5 ), 6 * CELLSIZE, 6 * CELLSIZE
-  );
+  // Draw Titlecard
+  {
+    let { x: xCell, y: yCell } = worldToScreen( 5, 5 );
+    ctx.drawImage(
+      textureAtlas,
+      0, 100, 600, 600,
+      xCell, yCell, 6 * CELLSIZE, 6 * CELLSIZE
+    );
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `${ CELLSIZE * 0.75 * (1 + scoreUpdateAnimationTime / 8) }px "Roboto Bold Modified"`;
+    ctx.fillText( score, xCell + 1.2 * CELLSIZE, yCell + 4.6 * CELLSIZE );
+    ctx.font = `${ CELLSIZE * 0.75 * (1 + highscoreUpdateAnimationTime / 8) }px "Roboto Bold Modified"`;
+    ctx.fillText( highscore, xCell + 1.2 * CELLSIZE, yCell + 5.2 * CELLSIZE );
+  }
 }
 
 function drawApples( ) {

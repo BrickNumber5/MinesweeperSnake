@@ -7,10 +7,10 @@ Line 6 6
 Line 11 6
 
 #### Right Border
-Move 49 4
+Move 45 4
 Line 56 4
 Line 56 30
-Move 49 6
+Move 45 6
 Line 54 6
 Line 54 30
 
@@ -245,9 +245,17 @@ Line 19 27
 Move 20 26
 Line 18 26
 
+#### Bottom Border
+Move 4 40
+Line 4 56
+Line 56 56
+Line 56 40
+Move 6 40
+Line 6 54
+Line 54 54
+Line 54 40
 
 #### Snake
-Color 220 180 225
 Move 7 33
 Line 13 33
 Move 17 33
@@ -266,7 +274,6 @@ Move 29 36
 Line 31 36
 
 #### Apple
-Color 220 60 60
 Move 54 32
 Line 56 32
 Line 58 34
@@ -276,3 +283,31 @@ Line 54 38
 Line 52 36
 Line 52 34
 Line 54 32
+
+#### Score Icon
+Move 8 42
+Line 10 42
+Line 11 43
+Line 9 45
+Line 7 43
+Line 8 42
+
+#### Highscore Icon
+Move 8 47
+Line 10 47
+Line 10 50
+Line 9 51
+Line 9 52
+Move 8 52
+Line 10 52
+Move 9 51
+Line 8 50
+Line 8 47
+Move 8 47.5
+Line 7 47.5
+Line 7 49.5
+Line 8 49.5
+Move 10 47.5
+Line 11 47.5
+Line 11 49.5
+Line 10 49.5

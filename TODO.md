@@ -6,7 +6,7 @@
  - [x] Add Apples
  - [ ] Give the snake eyes
  - [ ] Add SFX
- - [ ] Add score and highscore
+ - [x] Add score and highscore
  - [ ] Add more information to debug mode
  - [x] Add Controls to 0,0
  - [x] Add tile clearing animation
