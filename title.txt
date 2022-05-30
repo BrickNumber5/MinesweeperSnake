@@ -1,18 +1,18 @@
 #### Left Border
-Move 4 31
+Move 4 30
 Line 4 4
 Line 11 4
-Move 6 31
+Move 6 30
 Line 6 6
 Line 11 6
 
 #### Right Border
 Move 49 4
 Line 56 4
-Line 56 31
+Line 56 30
 Move 49 6
 Line 54 6
-Line 54 31
+Line 54 30
 
 #### M
 Move 12 7
@@ -244,3 +244,35 @@ Line 20 26
 Line 19 27
 Move 20 26
 Line 18 26
+
+
+#### Snake
+Color 220 180 225
+Move 7 33
+Line 13 33
+Move 17 33
+Line 23 33
+Move 27 33
+Line 33 33
+Line 33 37
+Line 27 37
+Move 23 37
+Line 17 37
+Move 13 37
+Line 7 37
+Move 29 34
+Line 31 34
+Move 29 36
+Line 31 36
+
+# Apple
+Color 220 60 60
+Move 54 32
+Line 56 32
+Line 58 34
+Line 58 36
+Line 56 38
+Line 54 38
+Line 52 36
+Line 52 34
+Line 54 32
