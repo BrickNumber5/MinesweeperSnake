@@ -285,9 +285,9 @@ function drawGrid( ) {
         yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
         yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    let xCell = Math.round( CELLSIZE * ( x - cameraX ) + width / 2 );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let yCell = Math.round( CELLSIZE * ( y - cameraY ) + height / 2 );
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
       ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
@@ -299,7 +299,7 @@ function drawGrid( ) {
   ctx.drawImage(
     textureAtlas,
     0, 100, 600, 600,
-    CELLSIZE * ( 5 - cameraX ) + width / 2, CELLSIZE * ( 5 - cameraY ) + height / 2, 6 * CELLSIZE, 6 * CELLSIZE
+    Math.round( CELLSIZE * ( 5 - cameraX ) + width / 2 ), Math.round( CELLSIZE * ( 5 - cameraY ) + height / 2 ), 6 * CELLSIZE, 6 * CELLSIZE
   );
 }
 
