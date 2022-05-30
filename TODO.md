@@ -4,7 +4,7 @@
  - [x] Prerender digits for preformance and rendering consistency reasons
  - [x] Add tile uncovering mechanic
  - [x] Add Apples
- - [ ] Give the snake eyes
+ - [x] Give the snake eyes
  - [ ] Add SFX
  - [x] Add score and highscore
  - [ ] Add more information to debug mode

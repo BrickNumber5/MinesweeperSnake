@@ -19,7 +19,8 @@ const COLORS = {
   APPLELEAF: "#0ebf34",
   TITLETEXT: "#fff",
   DEBUG: "#cc2222",
-  DEBUG2: "#228822"
+  DEBUG2: "#228822",
+  EYES: [ "#fff", "#000", "#0002" ]
 }
 
 const cnv = document.querySelector( ".main canvas" );
@@ -175,6 +176,8 @@ const scoreAnimations = new Set( );
 
 let scoreUpdateAnimationTime = 0, highscoreUpdateAnimationTime = 0;
 
+let blinkingTimer = 100;
+
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
 function draw( time ) {
@@ -208,6 +211,10 @@ function draw( time ) {
   if ( timeSinceLastTurn >= TURNTIME ) {
     timeSinceLastTurn -= TURNTIME;
     turnLogic( );
+    blinkingTimer--;
+    if ( blinkingTimer < 0 ) {
+      blinkingTimer = Math.random( ) < 0.2 ? 2 : 20 + Math.round( Math.random( ) * 180 );
+    }
   }
   
   requestAnimationFrame( draw );
@@ -325,7 +332,7 @@ function drawGrid( ) {
       0, 100, 600, 600,
       xCell, yCell, 6 * CELLSIZE, 6 * CELLSIZE
     );
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = COLORS.TITLETEXT;
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
     ctx.font = `${ CELLSIZE * 0.75 * (1 + scoreUpdateAnimationTime / 8) }px "Roboto Bold Modified"`;
@@ -398,18 +405,46 @@ function drawSnake( ) {
   for ( let i = 1; i < snake.length - 1; i++ ) {
     ctx.lineTo( CELLSIZE * ( snake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ i ].y - cameraY + 0.5 ) + height / 2 );
   }
+  let snakeHead;
   if ( headFrozen ) {
-    ctx.lineTo(
-      CELLSIZE * ( snake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
-      CELLSIZE * ( snake.at( -1 ).y - cameraY + 0.5 ) + height / 2
-    );
+    snakeHead = {
+      x: CELLSIZE * ( snake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
+      y: CELLSIZE * ( snake.at( -1 ).y - cameraY + 0.5 ) + height / 2
+    };
   } else {
-    ctx.lineTo(
-      CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
-      CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
-    );
+    snakeHead = {
+      x: CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
+      y: CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
+    };
   }
+  ctx.lineTo( snakeHead.x, snakeHead.y );
   ctx.stroke( );
+  
+  let norm = dirToVector( snakeDir );
+  norm.x *= CELLSIZE;
+  norm.y *= CELLSIZE;
+  let tan = {
+    x: norm.y,
+    y: -norm.x
+  };
+  ctx.strokeStyle = blinkingTimer <= 0 ? COLORS.EYES[ 2 ] : COLORS.EYES[ 0 ];
+  ctx.lineWidth = CELLSIZE * 0.25;
+  ctx.beginPath( );
+  ctx.moveTo( snakeHead.x + 0.15 * tan.x, snakeHead.y + 0.15 * tan.y );
+  ctx.lineTo( snakeHead.x + 0.15 * tan.x + 0.1 * norm.x, snakeHead.y + 0.15 * tan.y + 0.1 * norm.y );
+  ctx.moveTo( snakeHead.x - 0.15 * tan.x, snakeHead.y - 0.15 * tan.y );
+  ctx.lineTo( snakeHead.x - 0.15 * tan.x + 0.1 * norm.x, snakeHead.y - 0.15 * tan.y + 0.1 * norm.y );
+  ctx.stroke( );
+  if ( blinkingTimer > 0 ) {
+    ctx.strokeStyle = COLORS.EYES[ 1 ];
+    ctx.lineWidth = CELLSIZE * 0.175;
+    ctx.beginPath( );
+    ctx.moveTo( snakeHead.x + 0.15 * tan.x + 0.1 * norm.x, snakeHead.y + 0.15 * tan.y + 0.1 * norm.y );
+    ctx.lineTo( snakeHead.x + 0.15 * tan.x + 0.1 * norm.x, snakeHead.y + 0.15 * tan.y + 0.1 * norm.y );
+    ctx.moveTo( snakeHead.x - 0.15 * tan.x + 0.1 * norm.x, snakeHead.y - 0.15 * tan.y + 0.1 * norm.y );
+    ctx.lineTo( snakeHead.x - 0.15 * tan.x + 0.1 * norm.x, snakeHead.y - 0.15 * tan.y + 0.1 * norm.y );
+    ctx.stroke( );
+  }
 }
 
 function updateCamera( ) {
