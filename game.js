@@ -279,15 +279,24 @@ function spawnApples( ) {
   }
 }
 
+function worldToScreenY( y ) { return Math.round( CELLSIZE * ( y - cameraY ) + height / 2 ); }
+function worldToScreenX( x ) { return Math.round( CELLSIZE * ( x - cameraX ) + width  / 2 ); }
+
+function worldToScreen( x, y ) {
+  return { x: worldToScreenX( x ), y: worldToScreenY( y ) };
+}
+
+function worldToScreenArr( x, y ) { ({ x, y } = worldToScreen( x, y )); return [ x, y ]; }
+
 function drawGrid( ) {
   const xLower = Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ),
         xUpper = Math.ceil(  cameraX + ( width  / 2 ) / CELLSIZE ),
         yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
         yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = Math.round( CELLSIZE * ( x - cameraX ) + width / 2 );
+    let xCell = worldToScreenX( x );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = Math.round( CELLSIZE * ( y - cameraY ) + height / 2 );
+      let yCell = worldToScreenY( y );
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
       ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
@@ -299,23 +308,21 @@ function drawGrid( ) {
   ctx.drawImage(
     textureAtlas,
     0, 100, 600, 600,
-    Math.round( CELLSIZE * ( 5 - cameraX ) + width / 2 ), Math.round( CELLSIZE * ( 5 - cameraY ) + height / 2 ), 6 * CELLSIZE, 6 * CELLSIZE
+    ...worldToScreenArr( 5, 5 ), 6 * CELLSIZE, 6 * CELLSIZE
   );
 }
 
 function drawApples( ) {
   apples.forEach( apple => {
     let { x, y } = apple;
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let { x: xCell, y: yCell } = worldToScreen( x, y );
     let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
     if ( !cell.covered || DEBUGMODE ) {
       ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell, yCell, CELLSIZE, CELLSIZE );
     }
   } );
   if ( eatenApple ) {
-    let xCell = CELLSIZE * ( snakeX - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( snakeY - cameraY ) + height / 2;
+    let {x: xCell, y: yCell} = worldToScreen( snakeX, snakeY );
     let offset = CELLSIZE * timeSinceLastTurn / TURNTIME
     ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
   }
@@ -326,8 +333,7 @@ function drawClearedTileAnimations( ) {
     let { x, y, time } = tile;
     let t = timeSinceLastCellUpdate + ( 3 - time ) * ( TURNTIME / 3 );
     ctx.fillStyle = COLORS.COVERED[ ( x + y ) & 1 ];
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let { x: xCell, y: yCell } = worldToScreen( x, y );
     let offset = ( t / TURNTIME ) * CELLSIZE;
     ctx.fillRect( xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
   } );
@@ -338,8 +344,7 @@ function drawScoreAnimations( ) {
     let { x, y, v, time } = scoreobj;
     const t = time > 12 ? 32 - 2 * time : time > 8 ? 8 : time;
     ctx.fillStyle = `#fff${ ( t * 16 ).toString( 16 )[ 0 ] }`;
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let { x: xCell, y: yCell } = worldToScreen( x, y );
     ctx.font = `${ CELLSIZE * ( t / 8 ) }px "Roboto Bold Modified"`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -405,9 +410,9 @@ function drawDebugRegions( ) {
         yLower = Math.floor( ( cameraY - ( height / 2 ) / CELLSIZE ) / REGIONSIZE ),
         yUpper = Math.ceil(  ( cameraY + ( height / 2 ) / CELLSIZE ) / REGIONSIZE );
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x * REGIONSIZE - cameraX ) + width / 2;
+    let xCell = worldToScreenX( x * REGIONSIZE );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y * REGIONSIZE - cameraY ) + height / 2;
+      let yCell = worldToScreenY( y * REGIONSIZE );
       ctx.strokeRect( xCell, yCell, CELLSIZE * REGIONSIZE, CELLSIZE * REGIONSIZE );
     }
   }
@@ -420,9 +425,9 @@ function drawDebugMines( ) {
         yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
         yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    let xCell = worldToScreenX( x );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let yCell = worldToScreenY( y );
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
       if ( cell.mine ) {
         ctx.fillRect( xCell + 0.2 * CELLSIZE, yCell + 0.2 * CELLSIZE, 0.6 * CELLSIZE, 0.6 * CELLSIZE );
@@ -438,12 +443,11 @@ function drawDebugProjectedSnake( ) {
   ctx.lineCap = "square";
   ctx.lineJoin = "miter";
   ctx.beginPath( );
-  ctx.moveTo( CELLSIZE * ( virtualSnake[ 1 ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( virtualSnake[ 1 ].y - cameraY + 0.5 ) + height / 2 );
+  ctx.moveTo( ...worldToScreenArr( virtualSnake[ 1 ].x + 0.5, virtualSnake[ 1 ].y + 0.5 ) );
   for ( let i = 1; i < virtualSnake.length - 1; i++ ) {
-    ctx.lineTo( CELLSIZE * ( virtualSnake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( virtualSnake[ i ].y - cameraY + 0.5 ) + height / 2 );
+    ctx.lineTo( ...worldToScreenArr( virtualSnake[ i ].x + 0.5, virtualSnake[ i ].y + 0.5 ) );
   }
-  let x = CELLSIZE * ( virtualSnake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
-      y = CELLSIZE * ( virtualSnake.at( -1 ).y - cameraY + 0.5 ) + height / 2;
+  let { x, y } = worldToScreen( virtualSnake.at( -1 ).x + 0.5, virtualSnake.at( -1 ).y + 0.5 );
   ctx.lineTo( x, y );
   ctx.stroke( );
   let v = dirToVector( projectedSnake.direction );
