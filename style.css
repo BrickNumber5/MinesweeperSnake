@@ -16,3 +16,7 @@ body {
   inset: 0;
   display: block;
 }
+
+canvas {
+  display: block;
+}

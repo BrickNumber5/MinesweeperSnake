@@ -1,0 +1,313 @@
+#### Left Border
+Move 4 30
+Line 4 4
+Line 11 4
+Move 6 30
+Line 6 6
+Line 11 6
+
+#### Right Border
+Move 45 4
+Line 56 4
+Line 56 30
+Move 45 6
+Line 54 6
+Line 54 30
+
+#### M
+Move 12 7
+Line 12 3
+Line 13 4
+Line 14 3
+Line 14 7
+
+#### i
+Move 15 5
+Line 16 5
+Line 16 7
+Move 15 7
+Line 17 7
+Move 16 4
+Line 16 4
+
+#### n
+Move 18 7
+Line 18 5
+Move 18 6
+Line 19 5
+Line 20 5
+Line 20 7
+
+#### e
+Move 23 7
+Line 21 7
+Line 21 5
+Line 23 5
+Line 23 6
+Line 21 6
+
+#### s
+Move 26 5
+Line 24 5
+Line 24 6
+Line 26 6
+Line 26 7
+Line 24 7
+
+#### w
+Move 27 5
+Line 27 7
+Line 28 6
+Line 29 7
+Line 29 5
+
+#### e
+Move 32 7
+Line 30 7
+Line 30 5
+Line 32 5
+Line 32 6
+Line 30 6
+
+#### e
+Move 35 7
+Line 33 7
+Line 33 5
+Line 35 5
+Line 35 6
+Line 33 6
+
+#### p
+Move 36 8
+Line 36 5
+Line 38 5
+Line 38 7
+Line 36 7
+
+#### e
+Move 41 7
+Line 39 7
+Line 39 5
+Line 41 5
+Line 41 6
+Line 39 6
+
+#### r
+Move 42 7
+Line 42 5
+Move 42 6
+Line 43 5
+Line 44 5
+
+#### S
+Move 35 9
+Line 35 8
+Line 33 8
+Line 33 10
+Line 35 10
+Line 35 12
+Line 33 12
+Line 33 11
+
+#### n
+Move 36 10
+Line 36 12
+Move 36 11
+Line 37 10
+Line 38 10
+Line 38 12
+
+#### a
+Move 41 11
+Line 40 12
+Line 39 12
+Line 39 10
+Line 41 10
+Line 41 12
+
+#### k
+Move 42 8
+Line 42 12
+Move 44 9
+Line 42 11
+Move 43 10
+Line 44 11
+Line 44 12
+
+#### e
+Move 47 12
+Line 45 12
+Line 45 10
+Line 47 10
+Line 47 11
+Line 45 11
+
+#### WASD
+
+#### W
+Move 11 9
+Line 15 9
+Line 15 13
+Line 11 13
+Line 11 9
+Move 12 10
+Line 12 12
+Line 13 11
+Line 14 12
+Line 14 10
+
+#### A
+Move 7 14
+Line 11 14
+Line 11 18
+Line 7 18
+Line 7 14
+Move 10 16
+Line 9 17
+Line 8 17
+Line 8 15
+Line 10 15
+Line 10 17
+
+#### S
+Move 12 14
+Line 16 14
+Line 16 18
+Line 12 18
+Line 12 14
+Move 15 15
+Line 13 15
+Line 13 16
+Line 15 16
+Line 15 17
+Line 13 17
+
+#### D
+Move 17 14
+Line 21 14
+Line 21 18
+Line 17 18
+Line 17 14
+Move 18 15
+Line 19 15
+Line 20 16
+Line 20 17
+Line 18 17
+Line 18 15
+
+#### Arrows
+
+#### Up Arrow
+Move 12 21
+Line 16 21
+Line 16 25
+Line 12 25
+Line 12 21
+Move 13 23
+Line 14 22
+Line 15 23
+Move 14 22
+Line 14 24
+
+#### Left Arrow
+Move 7 24
+Line 11 24
+Line 11 28
+Line 7 28
+Line 7 24
+Move 9 25
+Line 8 26
+Line 9 27
+Move 8 26
+Line 10 26
+
+#### Down Arrow
+Move 12 26
+Line 16 26
+Line 16 30
+Line 12 30
+Line 12 26
+Move 13 28
+Line 14 29
+Line 15 28
+Move 14 29
+Line 14 27
+
+#### Right Arrow
+Move 17 24
+Line 21 24
+Line 21 28
+Line 17 28
+Line 17 24
+Move 19 25
+Line 20 26
+Line 19 27
+Move 20 26
+Line 18 26
+
+#### Bottom Border
+Move 4 40
+Line 4 56
+Line 56 56
+Line 56 40
+Move 6 40
+Line 6 54
+Line 54 54
+Line 54 40
+
+#### Snake
+Move 7 33
+Line 13 33
+Move 17 33
+Line 23 33
+Move 27 33
+Line 33 33
+Line 33 37
+Line 27 37
+Move 23 37
+Line 17 37
+Move 13 37
+Line 7 37
+Move 29 34
+Line 31 34
+Move 29 36
+Line 31 36
+
+#### Apple
+Move 54 32
+Line 56 32
+Line 58 34
+Line 58 36
+Line 56 38
+Line 54 38
+Line 52 36
+Line 52 34
+Line 54 32
+
+#### Score Icon
+Move 8 42
+Line 10 42
+Line 11 43
+Line 9 45
+Line 7 43
+Line 8 42
+
+#### Highscore Icon
+Move 8 47
+Line 10 47
+Line 10 50
+Line 9 51
+Line 9 52
+Move 8 52
+Line 10 52
+Move 9 51
+Line 8 50
+Line 8 47
+Move 8 47.5
+Line 7 47.5
+Line 7 49.5
+Line 8 49.5
+Move 10 47.5
+Line 11 47.5
+Line 11 49.5
+Line 10 49.5

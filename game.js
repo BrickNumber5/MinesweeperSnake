@@ -17,9 +17,11 @@ const COLORS = {
   NUMBER: [ null, "#db4545", "#db7145", "#6de30e", "#004687", "#9500aa", "#e31849", "#0c0027", "#bae5db" ],
   APPLE: "#bf0e0e",
   APPLELEAF: "#0ebf34",
+  TITLETEXT: "#fff",
   DEBUG: "#cc2222",
-  DEBUG2: "#228822"
-}
+  DEBUG2: "#228822",
+  EYES: [ "#fff", "#000", "#0002" ]
+};
 
 const cnv = document.querySelector( ".main canvas" );
 const ctx = cnv.getContext( "2d" );
@@ -109,12 +111,25 @@ let textureAtlas;
 ( async ( ) => {
   let ff = await new FontFace( "Roboto Bold Modified", "url(robotomodified/Roboto-Bold-Modified.ttf)" ).load( );
   document.fonts.add( ff );
-  createTextureAtlas( );
+  let titleTextureInstructions = await fetch( "./title.txt" ).then( f => f.text( ) );
+  createTextureAtlas( titleTextureInstructions );
   initGame( );
   requestAnimationFrame( draw );
 } )( );
 
 let paused = true;
+
+let score = 0, highscore = +( localStorage.getItem( "minesweeperSnake::highscore" ) ?? 0 );
+function setScore( s ) {
+  score = s;
+  if ( score > 0 ) scoreUpdateAnimationTime = 4;
+  if ( score > highscore ) {
+    highscore = score;
+    highscoreUpdateAnimationTime = 4;
+    localStorage.setItem( "minesweeperSnake::highscore", score );
+  }
+}
+function addScore( s ) { setScore( score + s ); }
 
 window.onresize = setCanvasSize;
 function setCanvasSize( ) {
@@ -124,12 +139,12 @@ function setCanvasSize( ) {
 
 function initGame( ) {
   snakeX = 8;
-  snakeY = 9;
+  snakeY = 8;
   
   snakeDir = DIRECTION.RIGHT;
   directionsQueue = [ ];
   
-  snake = [ { x: 4, y: 9 }, { x: 5, y: 9 }, { x: 6, y: 9 }, { x: 7, y: 9 }, { x: 8, y: 9 } ];
+  snake = [ { x: 4, y: 8 }, { x: 5, y: 8 }, { x: 6, y: 8 }, { x: 7, y: 8 }, { x: 8, y: 8 } ];
   
   cameraX = 0;
   cameraY = 0;
@@ -141,17 +156,37 @@ function initGame( ) {
   regions.set( "0/0", new Region( 0, 0, true ) );
   
   apples.clear( );
-  apples.add( { x: 10, y: 9 } );
+  apples.add( { x: 10, y: 8 } );
   eatenApple = false;
   
   clearedTileAnimations.clear( );
   
+  scoreAnimations.clear( );
+  
   projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
   
   paused = true;
+  
+  setScore( 0 );
+  
+  deathStatistics.dead = false;
+  deathStatistics.deathTimer = 0;
+  deathStatistics.explosionParticles = [ ];
 }
 
-let clearedTileAnimations = new Set( );
+const clearedTileAnimations = new Set( );
+
+const scoreAnimations = new Set( );
+
+let scoreUpdateAnimationTime = 0, highscoreUpdateAnimationTime = 0;
+
+let blinkingTimer = 100;
+
+const deathStatistics = {
+  dead: false,
+  deathTimer: 0,
+  explosionParticles: [ ]
+};
 
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
@@ -180,11 +215,24 @@ function draw( time ) {
   if ( DEBUGMODE ) drawDebugMines( );
   drawSnake( );
   if ( DEBUGMODE ) drawDebugProjectedSnake( );
+  if ( scoreAnimations.size > 0 ) drawScoreAnimations( );
   
-  timeSinceLastTurn += elapsedTime;
-  if ( timeSinceLastTurn >= TURNTIME ) {
-    timeSinceLastTurn -= TURNTIME;
-    turnLogic( );
+  if ( deathStatistics.dead ) {
+    let t = deathStatistics.deathTimer -= elapsedTime;
+    drawExplosion( deathStatistics.explosionParticles, t );
+    if ( t <= 0 ) {
+      initGame( );
+    }
+  } else {
+    timeSinceLastTurn += elapsedTime;
+    if ( timeSinceLastTurn >= TURNTIME ) {
+      timeSinceLastTurn -= TURNTIME;
+      turnLogic( );
+      blinkingTimer--;
+      if ( blinkingTimer < 0 ) {
+        blinkingTimer = Math.random( ) < 0.2 ? 2 : 20 + Math.round( Math.random( ) * 180 );
+      }
+    }
   }
   
   requestAnimationFrame( draw );
@@ -232,7 +280,10 @@ function updateCells( ) {
       }
     }
   }
-  clearedTileAnimations.forEach( t => { t.time--; if ( t.time <= 0 ) clearedTileAnimations.delete( t ) } );
+  scoreAnimations.forEach( s => { s.time--; if ( s.time <= 0 ) scoreAnimations.delete( s ); } );
+  clearedTileAnimations.forEach( t => { t.time--; if ( t.time <= 0 ) clearedTileAnimations.delete( t ); } );
+  if ( scoreUpdateAnimationTime > 0 ) scoreUpdateAnimationTime--;
+  if ( highscoreUpdateAnimationTime > 0 ) highscoreUpdateAnimationTime--;
   toClear.forEach( cell => {
     cell.c.covered = false;
     if ( cell.x >= Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ) - 1
@@ -265,15 +316,24 @@ function spawnApples( ) {
   }
 }
 
+function worldToScreenY( y ) { return Math.round( CELLSIZE * ( y - cameraY ) + height / 2 ); }
+function worldToScreenX( x ) { return Math.round( CELLSIZE * ( x - cameraX ) + width  / 2 ); }
+
+function worldToScreen( x, y ) {
+  return { x: worldToScreenX( x ), y: worldToScreenY( y ) };
+}
+
+function worldToScreenArr( x, y ) { ({ x, y } = worldToScreen( x, y )); return [ x, y ]; }
+
 function drawGrid( ) {
   const xLower = Math.floor( cameraX - ( width  / 2 ) / CELLSIZE ),
         xUpper = Math.ceil(  cameraX + ( width  / 2 ) / CELLSIZE ),
         yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
         yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    let xCell = worldToScreenX( x );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let yCell = worldToScreenY( y );
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
       ctx.fillStyle = COLORS[ cell.covered ? "COVERED" : "CLEARED" ][ ( x + y ) & 1 ];
       ctx.fillRect( xCell, yCell, CELLSIZE, CELLSIZE );
@@ -282,21 +342,35 @@ function drawGrid( ) {
       }
     }
   }
+  // Draw Titlecard
+  {
+    let { x: xCell, y: yCell } = worldToScreen( 5, 5 );
+    ctx.drawImage(
+      textureAtlas,
+      0, 100, 600, 600,
+      xCell, yCell, 6 * CELLSIZE, 6 * CELLSIZE
+    );
+    ctx.fillStyle = COLORS.TITLETEXT;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `${ CELLSIZE * 0.75 * (1 + scoreUpdateAnimationTime / 8) }px "Roboto Bold Modified"`;
+    ctx.fillText( score, xCell + 1.2 * CELLSIZE, yCell + 4.6 * CELLSIZE );
+    ctx.font = `${ CELLSIZE * 0.75 * (1 + highscoreUpdateAnimationTime / 8) }px "Roboto Bold Modified"`;
+    ctx.fillText( highscore, xCell + 1.2 * CELLSIZE, yCell + 5.2 * CELLSIZE );
+  }
 }
 
 function drawApples( ) {
   apples.forEach( apple => {
     let { x, y } = apple;
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let { x: xCell, y: yCell } = worldToScreen( x, y );
     let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE ) );
     if ( !cell.covered || DEBUGMODE ) {
       ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell, yCell, CELLSIZE, CELLSIZE );
     }
   } );
   if ( eatenApple ) {
-    let xCell = CELLSIZE * ( snakeX - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( snakeY - cameraY ) + height / 2;
+    let {x: xCell, y: yCell} = worldToScreen( snakeX, snakeY );
     let offset = CELLSIZE * timeSinceLastTurn / TURNTIME
     ctx.drawImage( textureAtlas, 900, 0, 100, 100, xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
   }
@@ -307,17 +381,29 @@ function drawClearedTileAnimations( ) {
     let { x, y, time } = tile;
     let t = timeSinceLastCellUpdate + ( 3 - time ) * ( TURNTIME / 3 );
     ctx.fillStyle = COLORS.COVERED[ ( x + y ) & 1 ];
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2,
-        yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+    let { x: xCell, y: yCell } = worldToScreen( x, y );
     let offset = ( t / TURNTIME ) * CELLSIZE;
     ctx.fillRect( xCell + offset / 2, yCell + offset / 2, CELLSIZE - offset, CELLSIZE - offset );
   } );
 }
 
+function drawScoreAnimations( ) {
+  scoreAnimations.forEach( scoreobj => {
+    let { x, y, v, time } = scoreobj;
+    const t = time > 12 ? 32 - 2 * time : time > 8 ? 8 : time;
+    ctx.fillStyle = `#fff${ ( t * 16 ).toString( 16 )[ 0 ] }`;
+    let { x: xCell, y: yCell } = worldToScreen( x, y );
+    ctx.font = `${ CELLSIZE * ( t / 8 ) }px "Roboto Bold Modified"`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText( v, xCell + CELLSIZE / 2, yCell + CELLSIZE / 2 );
+  } );
+}
+
 function drawSnake( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let tailFrozen = usedCourtesyTurn || clearedTile || paused || eatenApple,
-      headFrozen = usedCourtesyTurn || clearedTile || paused;
+  let tailFrozen = usedCourtesyTurn || clearedTile || paused || deathStatistics.dead || eatenApple,
+      headFrozen = usedCourtesyTurn || clearedTile || paused || deathStatistics.dead;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
   ctx.lineCap = "round";
@@ -337,23 +423,67 @@ function drawSnake( ) {
   for ( let i = 1; i < snake.length - 1; i++ ) {
     ctx.lineTo( CELLSIZE * ( snake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( snake[ i ].y - cameraY + 0.5 ) + height / 2 );
   }
+  let snakeHead;
   if ( headFrozen ) {
-    ctx.lineTo(
-      CELLSIZE * ( snake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
-      CELLSIZE * ( snake.at( -1 ).y - cameraY + 0.5 ) + height / 2
-    );
+    snakeHead = {
+      x: CELLSIZE * ( snake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
+      y: CELLSIZE * ( snake.at( -1 ).y - cameraY + 0.5 ) + height / 2
+    };
   } else {
-    ctx.lineTo(
-      CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
-      CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
-    );
+    snakeHead = {
+      x: CELLSIZE * ( lerp( snake.at( -2 ).x, snake.at( -1 ).x, turnAnimation ) - cameraX + 0.5 ) + width / 2,
+      y: CELLSIZE * ( lerp( snake.at( -2 ).y, snake.at( -1 ).y, turnAnimation ) - cameraY + 0.5 ) + height / 2
+    };
   }
+  ctx.lineTo( snakeHead.x, snakeHead.y );
   ctx.stroke( );
+  
+  let norm = dirToVector( snakeDir );
+  norm.x *= CELLSIZE;
+  norm.y *= CELLSIZE;
+  let tan = {
+    x: norm.y,
+    y: -norm.x
+  };
+  ctx.strokeStyle = blinkingTimer <= 0 ? COLORS.EYES[ 2 ] : COLORS.EYES[ 0 ];
+  ctx.lineWidth = CELLSIZE * 0.25;
+  ctx.beginPath( );
+  ctx.moveTo( snakeHead.x + 0.15 * tan.x, snakeHead.y + 0.15 * tan.y );
+  ctx.lineTo( snakeHead.x + 0.15 * tan.x + 0.1 * norm.x, snakeHead.y + 0.15 * tan.y + 0.1 * norm.y );
+  ctx.moveTo( snakeHead.x - 0.15 * tan.x, snakeHead.y - 0.15 * tan.y );
+  ctx.lineTo( snakeHead.x - 0.15 * tan.x + 0.1 * norm.x, snakeHead.y - 0.15 * tan.y + 0.1 * norm.y );
+  ctx.stroke( );
+  if ( blinkingTimer > 0 ) {
+    ctx.strokeStyle = COLORS.EYES[ 1 ];
+    ctx.lineWidth = CELLSIZE * 0.175;
+    ctx.beginPath( );
+    ctx.moveTo( snakeHead.x + 0.15 * tan.x + 0.1 * norm.x, snakeHead.y + 0.15 * tan.y + 0.1 * norm.y );
+    ctx.lineTo( snakeHead.x + 0.15 * tan.x + 0.1 * norm.x, snakeHead.y + 0.15 * tan.y + 0.1 * norm.y );
+    ctx.moveTo( snakeHead.x - 0.15 * tan.x + 0.1 * norm.x, snakeHead.y - 0.15 * tan.y + 0.1 * norm.y );
+    ctx.lineTo( snakeHead.x - 0.15 * tan.x + 0.1 * norm.x, snakeHead.y - 0.15 * tan.y + 0.1 * norm.y );
+    ctx.stroke( );
+  }
+}
+
+function drawExplosion( particles, t ) {
+  for ( p of particles ) {
+    let T = t + p.t;
+    let v = 255 * T / 250;
+    ctx.strokeStyle = `rgba(${ v }, ${ v }, ${ v })`;
+    ctx.lineWidth = p.s;
+    ctx.beginPath( );
+    ctx.moveTo( p.x, p.y );
+    ctx.lineTo( p.x, p.y );
+    ctx.stroke();
+    p.x += p.u * elapsedTime * 4;
+    p.y += p.v * elapsedTime * 4;
+    p.s *= 0.985 ** ( elapsedTime / 5 );
+  }
 }
 
 function updateCamera( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let headFrozen = usedCourtesyTurn || clearedTile || paused;
+  let headFrozen = usedCourtesyTurn || clearedTile || paused || deathStatistics.dead;
   if ( headFrozen ) {
     cameraX = snakeX + 0.5;
     cameraY = snakeY + 0.5;
@@ -372,9 +502,9 @@ function drawDebugRegions( ) {
         yLower = Math.floor( ( cameraY - ( height / 2 ) / CELLSIZE ) / REGIONSIZE ),
         yUpper = Math.ceil(  ( cameraY + ( height / 2 ) / CELLSIZE ) / REGIONSIZE );
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x * REGIONSIZE - cameraX ) + width / 2;
+    let xCell = worldToScreenX( x * REGIONSIZE );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y * REGIONSIZE - cameraY ) + height / 2;
+      let yCell = worldToScreenY( y * REGIONSIZE );
       ctx.strokeRect( xCell, yCell, CELLSIZE * REGIONSIZE, CELLSIZE * REGIONSIZE );
     }
   }
@@ -387,9 +517,9 @@ function drawDebugMines( ) {
         yLower = Math.floor( cameraY - ( height / 2 ) / CELLSIZE ),
         yUpper = Math.ceil(  cameraY + ( height / 2 ) / CELLSIZE ); 
   for ( let x = xLower; x < xUpper; x++ ) {
-    let xCell = CELLSIZE * ( x - cameraX ) + width / 2;
+    let xCell = worldToScreenX( x );
     for ( let y = yLower; y < yUpper; y++ ) {
-      let yCell = CELLSIZE * ( y - cameraY ) + height / 2;
+      let yCell = worldToScreenY( y );
       let cell = regions.get( Math.floor( x / REGIONSIZE ) + "/" + Math.floor( y / REGIONSIZE ) ).get( mod( x, REGIONSIZE ), mod( y, REGIONSIZE )  );
       if ( cell.mine ) {
         ctx.fillRect( xCell + 0.2 * CELLSIZE, yCell + 0.2 * CELLSIZE, 0.6 * CELLSIZE, 0.6 * CELLSIZE );
@@ -405,12 +535,11 @@ function drawDebugProjectedSnake( ) {
   ctx.lineCap = "square";
   ctx.lineJoin = "miter";
   ctx.beginPath( );
-  ctx.moveTo( CELLSIZE * ( virtualSnake[ 1 ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( virtualSnake[ 1 ].y - cameraY + 0.5 ) + height / 2 );
+  ctx.moveTo( ...worldToScreenArr( virtualSnake[ 1 ].x + 0.5, virtualSnake[ 1 ].y + 0.5 ) );
   for ( let i = 1; i < virtualSnake.length - 1; i++ ) {
-    ctx.lineTo( CELLSIZE * ( virtualSnake[ i ].x - cameraX + 0.5 ) + width / 2, CELLSIZE * ( virtualSnake[ i ].y - cameraY + 0.5 ) + height / 2 );
+    ctx.lineTo( ...worldToScreenArr( virtualSnake[ i ].x + 0.5, virtualSnake[ i ].y + 0.5 ) );
   }
-  let x = CELLSIZE * ( virtualSnake.at( -1 ).x - cameraX + 0.5 ) + width / 2,
-      y = CELLSIZE * ( virtualSnake.at( -1 ).y - cameraY + 0.5 ) + height / 2;
+  let { x, y } = worldToScreen( virtualSnake.at( -1 ).x + 0.5, virtualSnake.at( -1 ).y + 0.5 );
   ctx.lineTo( x, y );
   ctx.stroke( );
   let v = dirToVector( projectedSnake.direction );
@@ -440,7 +569,7 @@ function drawDebugProjectedSnake( ) {
 }
 
 function turnLogic( ) {
-  if ( paused === true ) return;
+  if ( paused === true || deathStatistics.dead ) return;
   paused = false;
   moveSnake( );
   projectState( );
@@ -476,6 +605,9 @@ function moveSnake( ) {
         } else {
           cell.covered = false;
           clearedTileAnimations.add( { x: tx, y: ty, time: 3 } );
+          const s = Math.floor( ( snake.length - 1 ) * ( Math.abs( tx ) + Math.abs( ty ) ) / REGIONSIZE );
+          scoreAnimations.add( { x: tx, y: ty, v: s, time: 16 } );
+          addScore( s );
         }
         return;
       }
@@ -494,6 +626,9 @@ function moveSnake( ) {
     if ( apple.x === snakeX && apple.y === snakeY ) {
       apples.delete( apple );
       eatenApple = true;
+      const s = Math.floor( 100 );
+      scoreAnimations.add( { x: snakeX, y: snakeY, v: s, time: 16 } );
+      addScore( s );
       break;
     }
   }
@@ -528,6 +663,7 @@ function fromDir( px, py, nx, ny ) {
 let projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
 
 window.addEventListener( "keydown", e => {
+  if ( deathStatistics.dead ) return;
   let dir = null;
   switch( e.key ) {
     case "w":
@@ -633,11 +769,11 @@ function generateWorldAsNeeded( ) {
   }
 }
 
-function createTextureAtlas( ) {
+function createTextureAtlas( titleTextureInstructions ) {
   // Here textureAtlas is the predefined global variable
   let atlas = textureAtlas = document.createElement( "canvas" );
   atlas.width = 1000;
-  atlas.height = 100;
+  atlas.height = 700;
   let actx  = atlas.getContext( "2d" );
   
   actx.font = '80px "Roboto Bold Modified"';
@@ -663,9 +799,56 @@ function createTextureAtlas( ) {
   actx.ellipse( 950, 20, 20, 10, -Math.PI / 4, 0, 2 * Math.PI );
   actx.fill( );
   
+  let tis = titleTextureInstructions.split( /(?:\r?\n)+/ ).map( i => {
+    const [ instruction, ...params ] = i.split( " " );
+    return { instruction, params: params.map( n => +n ), text: i };
+  } );
+  
+  actx.strokeStyle = COLORS.TITLETEXT;
+  actx.lineWidth = 8;
+  actx.beginPath( );
+  for ( ti of tis ) {
+    const { instruction, params, text } = ti;
+    if ( instruction === "Move" ) {
+      const [ x, y ] = params;
+      actx.moveTo( x * 10, 100 + y * 10 );
+    } else if ( instruction === "Line" ) {
+      const [ x, y ] = params;
+      actx.lineTo( x * 10, 100 + y * 10 );
+    } else if ( instruction === "####" ) {
+      // Comment: Ignore
+    } else if ( instruction === "Color" ) {
+      const [ r, g, b, a = 1 ] = params;
+      actx.stroke( );
+      actx.strokeStyle = `rgba(${ r }, ${ g }, ${ b }, ${ a })`;
+      actx.beginPath( );
+    } else {
+      console.warn( `Unknown instruction "${ text }"` );
+    }
+  }
+  actx.stroke( );
+  
   // document.body.appendChild( atlas );
 }
 
 function reset( reason ) {
-  initGame( );
+  deathStatistics.dead = true;
+  deathStatistics.deathTimer = 250;
+  let v = dirToVector( snakeDir );
+  let x = worldToScreenX( snakeX + 0.5 ) + v.x * CELLSIZE;
+  let y = worldToScreenY( snakeY + 0.5 ) + v.y * CELLSIZE;
+  for ( let i = 0; i < 150; i++ ) {
+    let a = Math.random( ) * 2 * Math.PI;
+    let d = Math.random( );
+    let s = CELLSIZE * Math.random( ) / 400;
+    deathStatistics.explosionParticles.push( {
+      x: x + CELLSIZE * d * Math.cos( a ) / 2,
+      y: y + CELLSIZE * d * Math.sin( a ) / 2,
+      u: Math.cos( a ) * s,
+      v: Math.sin( a ) * s,
+      t: Math.random( ) * 50 - 25,
+      s: ( Math.random( ) + 0.2 ) * CELLSIZE
+    } );
+  }
+  deathStatistics.explosionParticles.sort( ( a, b ) => a.t - b.t );
 }
