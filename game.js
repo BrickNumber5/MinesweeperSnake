@@ -21,7 +21,7 @@ const COLORS = {
   DEBUG: "#cc2222",
   DEBUG2: "#228822",
   EYES: [ "#fff", "#000", "#0002" ]
-}
+};
 
 const cnv = document.querySelector( ".main canvas" );
 const ctx = cnv.getContext( "2d" );
