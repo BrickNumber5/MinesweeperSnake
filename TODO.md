@@ -13,4 +13,4 @@
  - [x] Improve input queing system by predicting snake's position
  - [x] Create Favicon
  - [x] Create Paused Mode
- - [ ] Explosions
+ - [x] Explosions

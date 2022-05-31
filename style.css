@@ -9,6 +9,7 @@ body, body * {
 
 body {
   background: var(--clr-cleared-1);
+  overflow: hidden;
 }
 
 .main {
