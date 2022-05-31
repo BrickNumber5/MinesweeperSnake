@@ -168,6 +168,10 @@ function initGame( ) {
   paused = true;
   
   setScore( 0 );
+  
+  deathStatistics.dead = false;
+  deathStatistics.deathTimer = 0;
+  deathStatistics.explosionParticles = [ ];
 }
 
 const clearedTileAnimations = new Set( );
@@ -177,6 +181,12 @@ const scoreAnimations = new Set( );
 let scoreUpdateAnimationTime = 0, highscoreUpdateAnimationTime = 0;
 
 let blinkingTimer = 100;
+
+const deathStatistics = {
+  dead: false,
+  deathTimer: 0,
+  explosionParticles: [ ]
+};
 
 // Core Loop
 let prevTime = -1, elapsedTime, timeSinceLastTurn = 0, timeSinceLastCellUpdate = 0;
@@ -207,13 +217,21 @@ function draw( time ) {
   if ( DEBUGMODE ) drawDebugProjectedSnake( );
   if ( scoreAnimations.size > 0 ) drawScoreAnimations( );
   
-  timeSinceLastTurn += elapsedTime;
-  if ( timeSinceLastTurn >= TURNTIME ) {
-    timeSinceLastTurn -= TURNTIME;
-    turnLogic( );
-    blinkingTimer--;
-    if ( blinkingTimer < 0 ) {
-      blinkingTimer = Math.random( ) < 0.2 ? 2 : 20 + Math.round( Math.random( ) * 180 );
+  if ( deathStatistics.dead ) {
+    let t = deathStatistics.deathTimer -= elapsedTime;
+    drawExplosion( deathStatistics.explosionParticles, t );
+    if ( t <= 0 ) {
+      initGame( );
+    }
+  } else {
+    timeSinceLastTurn += elapsedTime;
+    if ( timeSinceLastTurn >= TURNTIME ) {
+      timeSinceLastTurn -= TURNTIME;
+      turnLogic( );
+      blinkingTimer--;
+      if ( blinkingTimer < 0 ) {
+        blinkingTimer = Math.random( ) < 0.2 ? 2 : 20 + Math.round( Math.random( ) * 180 );
+      }
     }
   }
   
@@ -384,8 +402,8 @@ function drawScoreAnimations( ) {
 
 function drawSnake( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let tailFrozen = usedCourtesyTurn || clearedTile || paused || eatenApple,
-      headFrozen = usedCourtesyTurn || clearedTile || paused;
+  let tailFrozen = usedCourtesyTurn || clearedTile || paused || deathStatistics.dead || eatenApple,
+      headFrozen = usedCourtesyTurn || clearedTile || paused || deathStatistics.dead;
   ctx.strokeStyle = COLORS.SNAKE;
   ctx.lineWidth = CELLSIZE * 0.8;
   ctx.lineCap = "round";
@@ -447,9 +465,25 @@ function drawSnake( ) {
   }
 }
 
+function drawExplosion( particles, t ) {
+  for ( p of particles ) {
+    let T = t + p.t;
+    let v = 255 * T / 250;
+    ctx.strokeStyle = `rgba(${ v }, ${ v }, ${ v })`;
+    ctx.lineWidth = p.s;
+    ctx.beginPath( );
+    ctx.moveTo( p.x, p.y );
+    ctx.lineTo( p.x, p.y );
+    ctx.stroke();
+    p.x += p.u * elapsedTime * 4;
+    p.y += p.v * elapsedTime * 4;
+    p.s *= 0.985 ** ( elapsedTime / 5 );
+  }
+}
+
 function updateCamera( ) {
   let turnAnimation = timeSinceLastTurn / TURNTIME;
-  let headFrozen = usedCourtesyTurn || clearedTile || paused;
+  let headFrozen = usedCourtesyTurn || clearedTile || paused || deathStatistics.dead;
   if ( headFrozen ) {
     cameraX = snakeX + 0.5;
     cameraY = snakeY + 0.5;
@@ -535,7 +569,7 @@ function drawDebugProjectedSnake( ) {
 }
 
 function turnLogic( ) {
-  if ( paused === true ) return;
+  if ( paused === true || deathStatistics.dead ) return;
   paused = false;
   moveSnake( );
   projectState( );
@@ -629,6 +663,7 @@ function fromDir( px, py, nx, ny ) {
 let projectedSnake = { extraSnake: [ ], tailSans: 0, state: "move", direction: DIRECTION.RIGHT };
 
 window.addEventListener( "keydown", e => {
+  if ( deathStatistics.dead ) return;
   let dir = null;
   switch( e.key ) {
     case "w":
@@ -797,5 +832,23 @@ function createTextureAtlas( titleTextureInstructions ) {
 }
 
 function reset( reason ) {
-  initGame( );
+  deathStatistics.dead = true;
+  deathStatistics.deathTimer = 250;
+  let v = dirToVector( snakeDir );
+  let x = worldToScreenX( snakeX + 0.5 ) + v.x * CELLSIZE;
+  let y = worldToScreenY( snakeY + 0.5 ) + v.y * CELLSIZE;
+  for ( let i = 0; i < 150; i++ ) {
+    let a = Math.random( ) * 2 * Math.PI;
+    let d = Math.random( );
+    let s = CELLSIZE * Math.random( ) / 400;
+    deathStatistics.explosionParticles.push( {
+      x: x + CELLSIZE * d * Math.cos( a ) / 2,
+      y: y + CELLSIZE * d * Math.sin( a ) / 2,
+      u: Math.cos( a ) * s,
+      v: Math.sin( a ) * s,
+      t: Math.random( ) * 50 - 25,
+      s: ( Math.random( ) + 0.2 ) * CELLSIZE
+    } );
+  }
+  deathStatistics.explosionParticles.sort( ( a, b ) => a.t - b.t );
 }
